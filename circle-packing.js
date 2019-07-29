@@ -182,7 +182,7 @@ function processFile(filename) {
   // console.log(path);
   // console.log(path.children[0]);
   // console.log(path.segments[0]);
-  const numPointsToGet = 400;
+  const numPointsToGet = 50;
   const actualPath = path.children[0];
   // console.log(actualPath)
   for (let i = 0; i < numPointsToGet; i++) {
