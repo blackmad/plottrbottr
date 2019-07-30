@@ -17,15 +17,12 @@ const debug = args.debug;
 console.log('debug', debug);
 args._.forEach(processFile);
 
-function fixPoint({point, shape}) {
-  return new paper.Point(
-    point.x + shape.bounds.x,
-    point.y + shape.bounds.y
-  );
+function fixPoint({ point, shape }) {
+  return new paper.Point(point.x + shape.bounds.x, point.y + shape.bounds.y);
 }
 
-function getRelativePoint({shape, pos}) {
-  return fixPoint({shape, point: shape.getPointAt(pos)})
+function getRelativePoint({ shape, pos }) {
+  return fixPoint({ shape, point: shape.getPointAt(pos) });
 }
 
 function approxShape(shape, numPointsToGet = 200) {
@@ -75,15 +72,19 @@ function approxShape(shape, numPointsToGet = 200) {
     for (let i = 0; i < numPointsToGet; i++) {
       points.push(
         shape.children[0].getPointAt(
-          (i / numPointsToGet) * shape.children[0].length        ));
+          (i / numPointsToGet) * shape.children[0].length
+        )
+      );
     }
   } else {
     // console.log(actualPath)
     for (let i = 0; i < numPointsToGet; i++) {
-      points.push(getRelativePoint({
-        shape, 
-        pos: (i / numPointsToGet) * shape.length
-      }));
+      points.push(
+        getRelativePoint({
+          shape,
+          pos: (i / numPointsToGet) * shape.length
+        })
+      );
     }
   }
   return points;
@@ -152,10 +153,11 @@ function loadAndResizeFile(filename) {
   var svgItem = paper.project.importSVG(svgData); //, {insert: false})
   // show(svgItem, 'black');
   const path = svgItem.children[1];
-  console.log(svgItem.children.length)
-  const actualPath = path.children[0];
-  console.log(path.children.length);
-
+  console.log(svgItem.children.length);
+  let actualPath = path;
+  if (path.children) {
+    actualPath = path.children[0];
+  }
   const maxSizeInches = 3;
   const maxSizePixels = pixelInches(maxSizeInches);
   const scale = Math.min(
@@ -173,20 +175,34 @@ function loadAndResizeFile(filename) {
   return actualPath;
 }
 
-function addHole({path, size, buffer}) {
+function addHole({ path, size, buffer }) {
   let movement = new paper.Point(0, 1);
   let initial = new paper.Point(path.bounds.width / 2, 0);
   // super wide
-  if (args.butt != 'no' && (path.bounds.width / path.bounds.height) > 3) {
-      movement = new paper.Point(-1, 0);
-      initial = new paper.Point(path.bounds.x + path.bounds.width + (size + buffer) * 2, path.bounds.y + path.bounds.height / 2); 
-  } 
+  if (args.butt != 'no' && path.bounds.width / path.bounds.height > 3) {
+    movement = new paper.Point(-1, 0);
+    initial = new paper.Point(
+      path.bounds.x + path.bounds.width + (size + buffer) * 2,
+      path.bounds.y + path.bounds.height / 2
+    );
+  }
   // add hole for string
-  let threadHoleOuter = new paper.Path.Circle(
-    initial,
-    size + buffer
-  );
-  while (!threadHoleOuter.intersects(path)) {
+  let threadHoleOuter = new paper.Path.Circle(initial, size + buffer);
+
+  function touchingEnough(path1, path2) {
+    const intersection = path1.intersect(path2);
+    // showCut(intersection, 'blue')
+    if (intersection) {
+      console.log(intersection.length);
+      return intersection.length > path1.length * 0.8;
+    }
+    return false;
+  }
+
+  while (
+    !threadHoleOuter.intersects(path) ||
+    !touchingEnough(threadHoleOuter, path)
+  ) {
     threadHoleOuter = threadHoleOuter.translate(movement);
   }
   // showCut(threadHoleOuter);
@@ -201,10 +217,7 @@ function addHole({path, size, buffer}) {
   }
   showCut(threadHoleOuter.unite(pathToUnite));
 
-  const threadHole = new paper.Path.Circle(
-    threadHoleOuter.bounds.center,
-    size
-  );
+  const threadHole = new paper.Path.Circle(threadHoleOuter.bounds.center, size);
   showCut(threadHole);
 }
 
@@ -231,13 +244,18 @@ function buildTriangles({ path, points }) {
   console.log('done');
   let polygonArray = Array.from(delaunay.trianglePolygons());
   if (args.voronoi) {
-    const voronoi = delaunay.voronoi([path.bounds.x, path.bounds.y, path.bounds.x + path.bounds.width, path.bounds.y+ path.bounds.height]);
+    const voronoi = delaunay.voronoi([
+      path.bounds.x,
+      path.bounds.y,
+      path.bounds.x + path.bounds.width,
+      path.bounds.y + path.bounds.height
+    ]);
     polygonArray = Array.from(voronoi.cellPolygons());
   }
-  console.log(`have ${polygonArray.length} triangles`)
+  console.log(`have ${polygonArray.length} triangles`);
   polygonArray.forEach((polygon, index) => {
     // console.log(`triangle ${index} of ${numTriangles.length}`);
-    const points = polygon.map((p) => new paper.Point(p[0], p[1]))
+    const points = polygon.map(p => new paper.Point(p[0], p[1]));
     // const tri = new paper.Path(points);
     // showCut(tri);
     const smallShape = bufferPoints(-pixelInches(0.02), points);
@@ -278,7 +296,7 @@ function generatePointsInPath(path) {
 function pointsToArray(points) {
   const ret = [];
   points.forEach(p => {
-    ret.push([p.x, p.y])
+    ret.push([p.x, p.y]);
   });
   return ret;
 }
@@ -295,39 +313,48 @@ function processFile(filename) {
   let svgItem = loadAndResizeFile(filename);
   let actualPath = svgItem;
   paper.setup(
-    new paper.Size(actualPath.bounds.width + 10 + threadHoleTotalSize*2 , actualPath.bounds.height + 10 + threadHoleTotalSize*2)
+    new paper.Size(
+      actualPath.bounds.width + 10 + threadHoleTotalSize * 2,
+      actualPath.bounds.height + 10 + threadHoleTotalSize * 2
+    )
   );
   paper.project.activeLayer.addChild(svgItem);
   svgItem = loadAndResizeFile(filename);
-  svgItem = svgItem.translate(new paper.Point(0, threadHoleTotalSize*2));
+  svgItem = svgItem.translate(new paper.Point(0, threadHoleTotalSize * 2));
   actualPath = svgItem;
+  if (!actualPath.closed) {
+    console.log('not closed outer ring');
+    process.exit(1);
+  }
 
   // show(actualPath, 'black');
 
   const numPointsToGet = 50;
   const points = pointsToArray(approxShape(actualPath, numPointsToGet));
-  points.forEach((p) => show(new paper.Path.Circle(p, 1), 'blue'));
+  points.forEach(p => show(new paper.Path.Circle(p, 1), 'blue'));
 
   const extraPoints = generatePointsInPath(actualPath);
-  const allPoints = points.concat(extraPoints)
+  const allPoints = points.concat(extraPoints);
   // showCut(svgItem);
   actualPath.closePath();
 
   buildTriangles({ path: actualPath, points: allPoints });
-  addHole({path: actualPath, size: threadHoleSize, buffer: threadHoleBuffer});
+  addHole({ path: actualPath, size: threadHoleSize, buffer: threadHoleBuffer });
 
   console.log('all done, writing out');
 
-  const interpolate = require("interpolate-string");
-  let outputTemplate = args.outputTemplate || '{{basePath}}-voronoi4.svg'
+  const interpolate = require('interpolate-string');
+  let outputTemplate = args.outputTemplate || '{{basePath}}-voronoi4.svg';
 
-  const outputFilename = interpolate(outputTemplate, {basePath: pathModule.basename(filename).split('.')[0]})
+  const outputFilename = interpolate(outputTemplate, {
+    basePath: pathModule.basename(filename).split('.')[0]
+  });
   fs.writeFileSync(outputFilename, paper.project.exportSVG({ asString: true }));
 
   var opn = require('opn');
   if (args.open) {
     const fullPath = 'file://' + process.cwd() + '/' + outputFilename;
     console.log(fullPath);
-    opn(fullPath, {app: 'google chrome'});
+    opn(fullPath, { app: 'google chrome' });
   }
 }
