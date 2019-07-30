@@ -120,7 +120,7 @@ function pixelInches(n) {
   return n * 96;
 }
 
-function loadAndResizeFile(filename) {
+function loadAndResizeFile({filename, yOffset = 0, xOffset = 0}) {
   const svgData = fs.readFileSync(filename, 'utf8');
   var svgItem = paper.project.importSVG(svgData); //, {insert: false})
   // show(svgItem, 'black');
@@ -143,7 +143,7 @@ function loadAndResizeFile(filename) {
 
   svgItem = svgItem.scale(scale);
   svgItem.translate(
-    new paper.Point(-actualPath.bounds.x, -actualPath.bounds.y + (threadHoleTotalSize * 2))
+    new paper.Point(-actualPath.bounds.x + xOffset, -actualPath.bounds.y + yOffset)
   );
   console.log(svgItem.bounds.width, svgItem.bounds.height);
   return actualPath;
@@ -285,35 +285,34 @@ function pointsToArray(points) {
   return ret;
 }
 
-function processFile(filename) {
-  console.log(`processing ${filename}`);
-  const forceContainment = true; //!!args['forceContainment'];
-
+function loadFileAdjustCanvas({filename, xOffset = 0, yOffset = 0, xPadding = 0, yPadding = 0}) {
   paper.setup([10, 10]);
-  let svgItem = loadAndResizeFile(filename);
-  let actualPath = svgItem;
+  let actualPath = loadAndResizeFile({filename, xOffset, yOffset});
+
   const oldProject = paper.project;
   const project = new paper.Project(
     new paper.Size(
-      actualPath.bounds.width + 10 + threadHoleTotalSize * 2,
-      actualPath.bounds.height + 10 + threadHoleTotalSize * 2
+      actualPath.bounds.width + xPadding + 1,
+      actualPath.bounds.height + yPadding + 1
     )
   );
   project.activate();
   oldProject.remove();
-  // paper.project.activeLayer.addChild(svgItem);
-  svgItem = loadAndResizeFile(filename);
-  // svgItem = svgItem.translate(new paper.Point(0, ));
-  actualPath = svgItem;
+
+  actualPath = loadAndResizeFile({filename, xOffset, yOffset});
   if (!actualPath.closed) {
     console.log('not closed outer ring');
     process.exit(1);
   }
+  return actualPath;
+
+}
+
+function processFile(filename) {
+  console.log(`processing ${filename}`);
+  const actualPath = loadFileAdjustCanvas({filename, yOffset: threadHoleTotalSize*2, xPadding: threadHoleTotalSize*2, yPadding: threadHoleTotalSize*2})
 
   // show(actualPath, 'black');
-
-  // showCut(svgItem);
-  actualPath.closePath();
 
   buildTriangles({ path: actualPath }); //, points: allPoints });
   addHole({ path: actualPath, size: threadHoleSize, buffer: threadHoleBuffer });
