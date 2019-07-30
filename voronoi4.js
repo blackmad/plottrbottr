@@ -229,14 +229,16 @@ function buildTriangles({ path, points }) {
   console.log('triangulating');
   const delaunay = Delaunay.from(points);
   console.log('done');
-  const voronoi = delaunay.voronoi([path.bounds.x, path.bounds.y, path.bounds.x + path.bounds.width, path.bounds.y+ path.bounds.height]);
-  const trianglesArray = Array.from(voronoi.cellPolygons());
-  console.log(`have ${trianglesArray.length} triangles`)
-  trianglesArray.forEach((triangle, index) => {
+  let polygonArray = Array.from(delaunay.trianglePolygons());
+  if (args.voronoi) {
+    const voronoi = delaunay.voronoi([path.bounds.x, path.bounds.y, path.bounds.x + path.bounds.width, path.bounds.y+ path.bounds.height]);
+    polygonArray = Array.from(voronoi.cellPolygons());
+  }
+  console.log(`have ${polygonArray.length} triangles`)
+  polygonArray.forEach((polygon, index) => {
     // console.log(`triangle ${index} of ${numTriangles.length}`);
-    const points = triangle.map((t) => new paper.Point(t[0], t[1]))
-    const tri = new paper.Path(points);
-
+    const points = polygon.map((p) => new paper.Point(p[0], p[1]))
+    // const tri = new paper.Path(points);
     // showCut(tri);
     const smallShape = bufferPoints(-pixelInches(0.02), points);
     if (smallShape) {
