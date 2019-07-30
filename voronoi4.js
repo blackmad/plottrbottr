@@ -18,6 +18,11 @@ const threadHoleTotalSize = threadHoleSize + threadHoleBuffer;
 
 const args = require('minimist')(process.argv.slice(2));
 const debug = args.debug;
+
+if (!debug) {
+  console.log = (s) => {}
+}
+
 console.log('debug', debug);
 args._.forEach(processFile);
 
