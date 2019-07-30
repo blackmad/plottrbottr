@@ -43,7 +43,7 @@ function approxShape(shape, numPointsToGet = 200, useRelative = false) {
   let shapeToUse = shape;
 
   if (shape instanceof paper.CompoundPath) {
-    shape = shape.children[0];
+    shapeToUse = shape.children[0];
   }
   // console.log(actualPath)
   for (let i = 0; i < numPointsToGet; i++) {
@@ -164,11 +164,11 @@ function addHole({ path, size, buffer }) {
   let threadHoleOuter = new paper.Path.Circle(initial, size + buffer);
 
   function touchingEnough(path1, path2) {
-    const intersection = path1.intersect(path2);
+    const intersection = path1.subtract(path2, {insert: false, trace: false});
     // showCut(intersection, 'blue')
     if (intersection) {
       console.log(intersection.length);
-      return intersection.length > path1.length * 0.8;
+      return intersection.length < path1.length * 0.8;
     }
     return false;
   }
