@@ -27,7 +27,7 @@ function approxShape(shape, numPointsToGet = 1000) {
 
 function bufferPath(buffer, path, numPoints) {
   const shape = approxShape(path, numPoints);
-  console.log(shape);
+  // console.log(shape);
   return bufferPoints(buffer, shape);
 }
 
@@ -52,7 +52,7 @@ function bufferPath(buffer, path, numPoints) {
       return new paper.Point(p.X / 100, p.Y / 100)
     })
   )
-  console.log(roundedPolygon);
+  // console.log(roundedPolygon);
 
   return roundedPolygon;
 }
@@ -71,6 +71,10 @@ function showCut(path) {
   };
 }
 
+function pixelInches(n) {
+  return n * 96;
+}
+
 function processFile(filename) {
   console.log(`processing ${filename}`);
   const forceContainment = true; //!!args['forceContainment'];
@@ -79,6 +83,9 @@ function processFile(filename) {
   const svgData = fs.readFileSync(filename, 'utf8');
   var svgItem = paper.project.importSVG(svgData); //, {insert: false})
   show(svgItem, 'black')
+
+  const maxSizeInches = 3;
+  const maxSizePixels = pixelInches(maxSizeInches);
   
 
   const path = svgItem.children[1];
@@ -119,6 +126,12 @@ function processFile(filename) {
   show(innerShape, 'brown')
   innerShape.closePath();
 
+  const shouldSubtract = true;
+
+  let veryInnerShape = bufferPath(-50, actualPath);
+  show(veryInnerShape, 'brown')
+  veryInnerShape.closePath();
+
   const delaunay = Delaunay.from(points.concat(extraPoints));
   const voronoi = delaunay.voronoi([0, 0, path.bounds.width, path.bounds.height]);
   Array.from(delaunay.trianglePolygons()).forEach((triangle) => {
@@ -134,7 +147,13 @@ function processFile(filename) {
     const smallShape = bufferPoints(-5, points);
     if (smallShape) {
       smallShape.closePath();
-      const cutOffShape = smallShape.intersect(innerShape);
+      let cutOffShape = smallShape.intersect(innerShape);
+      
+
+      if (shouldSubtract) {
+        cutOffShape = cutOffShape.subtract(veryInnerShape)
+      }
+
       showCut(cutOffShape);
     }
   })
