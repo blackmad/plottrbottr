@@ -13,7 +13,10 @@ var shuffle = require('shuffle-array');
 var Shape = require('@doodle3d/clipper-js');
 
 const args = require('minimist')(process.argv.slice(2));
+const debug = args.debug;
+console.log('debug', debug)
 args._.forEach(processFile);
+
 
 function approxShape(shape, numPointsToGet = 1000) {
   let points = [];
@@ -33,7 +36,8 @@ function bufferPath(buffer, path, numPoints) {
 
  function bufferPoints(buffer, points) {
   const scaleFactor = 100;
-  const scaledPoints = points.map((p) => { return {X: (p.x*scaleFactor) + 0.0001 , Y: (p.y*scaleFactor) + 0.0001}});
+  const roundingBit = 1 / scaleFactor * 10 
+  const scaledPoints = points.map((p) => { return {X: (p.x*scaleFactor) + roundingBit , Y: (p.y*scaleFactor) + roundingBit}});
   const shape = new Shape.default([scaledPoints]);
 
   const roundedShape = shape.offset(buffer*scaleFactor, {
@@ -49,7 +53,7 @@ function bufferPath(buffer, path, numPoints) {
 
   const roundedPolygon = new paper.Path(
     roundedShape.paths[0].map((p) => {
-      return new paper.Point(p.X / 100, p.Y / 100)
+      return new paper.Point(p.X / scaleFactor, p.Y / scaleFactor)
     })
   )
   // console.log(roundedPolygon);
@@ -58,10 +62,12 @@ function bufferPath(buffer, path, numPoints) {
 }
 
 function show(path, color) {
-  // path.style = {
-  //   strokeWidth: 1,
-  //   strokeColor: color || 'green'
-  // };
+  if (debug) {
+    path.style = {
+      strokeWidth: 1,
+      strokeColor: color || 'green'
+    };
+  }
 }
 
 function showCut(path) {
@@ -75,21 +81,40 @@ function pixelInches(n) {
   return n * 96;
 }
 
+function loadAndResizeFile(filename) {
+  const svgData = fs.readFileSync(filename, 'utf8');
+  var svgItem = paper.project.importSVG(svgData); //, {insert: false})
+  show(svgItem, 'black');
+
+  const maxSizeInches = 3;
+  const maxSizePixels = pixelInches(maxSizeInches);
+  const scale = Math.min(
+    maxSizePixels / svgItem.bounds.width,
+    maxSizePixels / svgItem.bounds.height
+  )
+  console.log(svgItem.bounds.width, svgItem.bounds.height)
+  console.log(scale);
+  svgItem = svgItem.scale(scale);
+  svgItem.translate(new paper.Point(
+    -svgItem.bounds.x,
+    -svgItem.bounds.y
+  ));
+  console.log(svgItem.bounds.width, svgItem.bounds.height)
+  return svgItem;
+}
+
 function processFile(filename) {
   console.log(`processing ${filename}`);
   const forceContainment = true; //!!args['forceContainment'];
 
   paper.setup([1000, 1000]);
-  const svgData = fs.readFileSync(filename, 'utf8');
-  var svgItem = paper.project.importSVG(svgData); //, {insert: false})
-  show(svgItem, 'black')
-
-  const maxSizeInches = 3;
-  const maxSizePixels = pixelInches(maxSizeInches);
-  
+  let svgItem = loadAndResizeFile(filename);
+  paper.setup(new paper.Size(svgItem.bounds.width + 10, svgItem.bounds.height + 10))
+  svgItem = loadAndResizeFile(filename);
 
   const path = svgItem.children[1];
   const actualPath = path.children[0];
+  show(path, 'black');
 
   const numPointsToGet = 50;
   let points = [];
@@ -117,47 +142,65 @@ function processFile(filename) {
   showCut(svgItem);
   actualPath.closePath();
 
-  const outerShape = bufferPath(3, actualPath);
+  const outerShape = bufferPath(1, actualPath);
   outerShape.closePath();
   show(outerShape, 'brown')
 
-  let innerShape = bufferPath(-20, actualPath);
+  let innerShape = bufferPath(-pixelInches(0.1), actualPath);
   // innerShape = bufferPath(1, actualPath);
   show(innerShape, 'brown')
   innerShape.closePath();
 
-  const shouldSubtract = true;
+  // const shouldSubtract = true;
 
-  let veryInnerShape = bufferPath(-50, actualPath);
+  let veryInnerShape = bufferPath(-pixelInches(0.2), actualPath);
   show(veryInnerShape, 'brown')
   veryInnerShape.closePath();
 
+  console.log('triangulating')
   const delaunay = Delaunay.from(points.concat(extraPoints));
-  const voronoi = delaunay.voronoi([0, 0, path.bounds.width, path.bounds.height]);
-  Array.from(delaunay.trianglePolygons()).forEach((triangle) => {
-    const points = [
-      new paper.Point(triangle[0][0], triangle[0][1]),
-      new paper.Point(triangle[1][0], triangle[1][1]),
-      new paper.Point(triangle[2][0], triangle[2][1]),
-      new paper.Point(triangle[3][0], triangle[3][1]),
-    ];
-    const tri = new paper.Path(points);
+  console.log('done')
+  // const voronoi = delaunay.voronoi([0, 0, path.bounds.width, path.bounds.height]);
+  const numTriangles = Array.from(delaunay.trianglePolygons())
+  // Array.from(delaunay.trianglePolygons()).forEach((triangle, index) => {
+  //   console.log(`triangle ${index} of ${numTriangles.length}`)
+  //   const points = [
+  //     new paper.Point(triangle[0][0], triangle[0][1]),
+  //     new paper.Point(triangle[1][0], triangle[1][1]),
+  //     new paper.Point(triangle[2][0], triangle[2][1]),
+  //     new paper.Point(triangle[3][0], triangle[3][1]),
+  //   ];
+  //   const tri = new paper.Path(points);
 
-    show(tri);
-    const smallShape = bufferPoints(-5, points);
-    if (smallShape) {
-      smallShape.closePath();
-      let cutOffShape = smallShape.intersect(innerShape);
+  //   show(tri);
+  //   const smallShape = bufferPoints(-pixelInches(0.02), points);
+  //   if (smallShape) {
+  //     smallShape.closePath();
+  //     let cutOffShape = smallShape.intersect(innerShape);
+  //     smallShape.remove();
       
+  //     if (args.shouldSubtract) {
+  //       cutOffShape = cutOffShape.subtract(veryInnerShape)
+  //     }
 
-      if (shouldSubtract) {
-        cutOffShape = cutOffShape.subtract(veryInnerShape)
-      }
+  //     showCut(cutOffShape);
+  //   }
+  // })
 
-      showCut(cutOffShape);
-    }
-  })
+  const threadHoleSize = pixelInches(0.1)
+  const threadHoleBuffer = pixelInches(0.1)
+  let  threadHole = new paper.Path.Circle(
+    new paper.Point(svgItem.bounds.width / 2, 0),
+    threadHoleSize + threadHoleBuffer
+  )
+  while (!threadHole.intersects(actualPath)) {
+    threadHole = threadHole.translate(
+      new paper.Point(0, 1)
+    )
+  }
+  showCut(threadHole);
 
+  console.log('all done, writing out')
   const outputFilename =
     pathModule.basename(filename).split('.')[0] + '-voronoi4.svg';
   fs.writeFileSync(outputFilename, paper.project.exportSVG({ asString: true }));
