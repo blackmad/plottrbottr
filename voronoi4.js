@@ -177,7 +177,7 @@ function addHole({path, size, buffer}) {
   let movement = new paper.Point(0, 1);
   let initial = new paper.Point(path.bounds.width / 2, 0);
   // super wide
-  if ((path.bounds.width / path.bounds.height) > 3) {
+  if (args.butt != 'no' && (path.bounds.width / path.bounds.height) > 3) {
       movement = new paper.Point(-1, 0);
       initial = new paper.Point(path.bounds.x + path.bounds.width + (size + buffer) * 2, path.bounds.y + path.bounds.height / 2); 
   } 
@@ -229,17 +229,12 @@ function buildTriangles({ path, points }) {
   console.log('triangulating');
   const delaunay = Delaunay.from(points);
   console.log('done');
-  // const voronoi = delaunay.voronoi([0, 0, path.bounds.width, path.bounds.height]);
-  const trianglesArray = Array.from(delaunay.trianglePolygons());
+  const voronoi = delaunay.voronoi([path.bounds.x, path.bounds.y, path.bounds.x + path.bounds.width, path.bounds.y+ path.bounds.height]);
+  const trianglesArray = Array.from(voronoi.cellPolygons());
   console.log(`have ${trianglesArray.length} triangles`)
   trianglesArray.forEach((triangle, index) => {
     // console.log(`triangle ${index} of ${numTriangles.length}`);
-    const points = [
-      new paper.Point(triangle[0][0], triangle[0][1]),
-      new paper.Point(triangle[1][0], triangle[1][1]),
-      new paper.Point(triangle[2][0], triangle[2][1]),
-      new paper.Point(triangle[3][0], triangle[3][1])
-    ];
+    const points = triangle.map((t) => new paper.Point(t[0], t[1]))
     const tri = new paper.Path(points);
 
     // showCut(tri);
@@ -320,8 +315,11 @@ function processFile(filename) {
   addHole({path: actualPath, size: threadHoleSize, buffer: threadHoleBuffer});
 
   console.log('all done, writing out');
-  const outputFilename =
-    pathModule.basename(filename).split('.')[0] + '-voronoi4.svg';
+
+  const interpolate = require("interpolate-string");
+  let outputTemplate = args.outputTemplate || '{{basePath}}-voronoi4.svg'
+
+  const outputFilename = interpolate(outputTemplate, {basePath: pathModule.basename(filename).split('.')[0]})
   fs.writeFileSync(outputFilename, paper.project.exportSVG({ asString: true }));
 
   var opn = require('opn');
