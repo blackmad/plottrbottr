@@ -120,10 +120,12 @@ function loadAndResizeFile(filename) {
   var svgItem = paper.project.importSVG(svgData); //, {insert: false})
   // show(svgItem, 'black');
   const path = svgItem.children[1];
-  console.log(svgItem.children.length);
+  console.log('num children', svgItem.children.length);
   let actualPath = path;
   if (path.children) {
-    actualPath = path.children[0];
+    actualPath = _.sortBy(path.children, (path) => -path.length)[0]
+    console.log('num children children', path.children.length);
+    // actualPath = path.children[0];
   }
   const maxSizeInches = 3;
   const maxSizePixels = pixelInches(maxSizeInches);
@@ -282,16 +284,19 @@ function processFile(filename) {
   console.log(`processing ${filename}`);
   const forceContainment = true; //!!args['forceContainment'];
 
-  paper.setup([1000, 1000]);
+  paper.setup([10, 10]);
   let svgItem = loadAndResizeFile(filename);
   let actualPath = svgItem;
-  paper.setup(
+  const oldProject = paper.project;
+  const project = new paper.Project(
     new paper.Size(
       actualPath.bounds.width + 10 + threadHoleTotalSize * 2,
       actualPath.bounds.height + 10 + threadHoleTotalSize * 2
     )
   );
-  paper.project.activeLayer.addChild(svgItem);
+  project.activate();
+  oldProject.remove();
+  // paper.project.activeLayer.addChild(svgItem);
   svgItem = loadAndResizeFile(filename);
   // svgItem = svgItem.translate(new paper.Point(0, ));
   actualPath = svgItem;
