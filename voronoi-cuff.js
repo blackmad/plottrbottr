@@ -18,10 +18,6 @@ const { JSDOM } = jsdom;
 console.log(require('./straight-cuff-outer'));
 var StraightCuffOuter = require('./straight-cuff-outer').StraightCuffOuter;
 
-const threadHoleSize = pixelInches(0.1);
-const threadHoleBuffer = pixelInches(0.05);
-const threadHoleTotalSize = threadHoleSize + threadHoleBuffer;
-
 const args = require('minimist')(process.argv.slice(2));
 const debug = args.debug;
 
@@ -52,7 +48,7 @@ function approxShape(shape, numPointsToGet = 200, useRelative = false) {
   let shapeToUse = shape;
 
   if (shape instanceof paper.CompoundPath) {
-    shape = shape.children[0];
+    shapeToUse = shape.children[0];
   }
   // console.log(actualPath)
   for (let i = 0; i < numPointsToGet; i++) {
@@ -113,16 +109,18 @@ function bufferPoints(buffer, points) {
 function show(path, color) {
   if (debug) {
     path.style = {
-      strokeWidth: 1,
-      strokeColor: color || 'green'
+      strokeWidth: '1px',
+      strokeColor: color || 'green',
+      fill: 'none'
     };
   }
 }
 
 function showCut(path, color) {
   path.style = {
-    strokeWidth: 1,
-    strokeColor: color || 'red'
+    strokeWidth: '1px',
+    strokeColor: color || 'red',
+    fill: 'none'
   };
 }
 
@@ -143,19 +141,20 @@ function loadAndResizeFile({ filename, yOffset = 0, xOffset = 0 }) {
     // actualPath = path.children[0];
   }
   const scale = Math.min(
-    cuffHeight*0.85 / actualPath.bounds.width,
-    cuffHeight*0.85 / actualPath.bounds.height
+    cuffWidth*0.65 / actualPath.bounds.width,
+    cuffHeight*0.65 / actualPath.bounds.height
   );
   console.log(svgItem.bounds.width, svgItem.bounds.height);
   console.log(scale);
 
   svgItem = svgItem.scale(scale);
   svgItem.translate(
-    new paper.Point(
-      -actualPath.bounds.x + (cuffWidth - actualPath.bounds.width)/2,
-      -actualPath.bounds.y + (cuffHeight - actualPath.bounds.height)/2 
-    )
-  );
+        new paper.Point(
+          -actualPath.bounds.x + (cuffWidth - actualPath.bounds.width)/2,
+          -actualPath.bounds.y + (cuffHeight - actualPath.bounds.height)/2 
+        )
+      );
+
   // showCut(new paper.Path.Rectangle(actualPath.bounds));
   console.log(svgItem.bounds.width, svgItem.bounds.height);
   return actualPath;
@@ -163,7 +162,6 @@ function loadAndResizeFile({ filename, yOffset = 0, xOffset = 0 }) {
 
 function makeOutline() {
   // console.log
-  console.log(StraightCuffOuter);
   const outer = new StraightCuffOuter().make({
     height: pixelInches(2), 
     wristCircumference: pixelInches(7), 
@@ -228,15 +226,22 @@ function buildTriangles({ path, rect }) {
   outerShape.closePath();
   show(outerShape, 'brown');
 
-  const numPointsToGet = 50;
+  const numPointsToGet = 40 + Math.floor(Math.random()*10);
   const points = pointsToArray(approxShape(path, numPointsToGet));
-  points.forEach(p => show(new paper.Path.Circle(p, 1), 'blue'));
+  points.forEach(p => show(new paper.Path.Circle(p, 0.02), 'blue'));
 
-  const extraPoints = generatePointsInPath(
-    new paper.Path.Rectangle(new paper.Point(0, 0), new paper.Size(cuffWidth, cuffHeight)),
-    path
-  );
-  const allPoints = points.concat(extraPoints);
+  let rectPoints = [];
+  
+  if (!args.voronoi) {
+    console.log('rect points!')
+    rectPoints = pointsToArray(approxShape(rect, numPointsToGet));
+    console.log(rectPoints);
+    rectPoints.forEach(p => show(new paper.Path.Circle(p, 0.02), 'blue'));
+  }
+
+  const extraPoints = generatePointsInPath(rect, path);
+
+  const allPoints = points.concat(extraPoints).concat(rectPoints);
 
   console.log('triangulating');
   const delaunay = Delaunay.from(allPoints);
@@ -257,7 +262,11 @@ function buildTriangles({ path, rect }) {
     const points = polygon.map(p => new paper.Point(p[0], p[1]));
     // const tri = new paper.Path(points);
     // showCut(tri);
-    const smallShape = bufferPoints(-pixelInches(0.02), points);
+    let smallShape = bufferPoints(-pixelInches(0.04), points);
+    if (!smallShape || smallShape.area < 0.1)  { 
+      console.log('trying again')
+      smallShape = bufferPoints(-pixelInches(0.03), points);
+    }
     if (smallShape) {
       smallShape.closePath();
       // showCut(smallShape)
@@ -275,7 +284,7 @@ function buildTriangles({ path, rect }) {
 
 function generatePointsInPath(path, exclude) {
   console.log('making extra points');
-  const numExtraPoints = 20;
+  const numExtraPoints = 5 + Math.floor(5 * Math.random()); 
   const extraPoints = [];
   while (extraPoints.length < numExtraPoints * 2) {
     const testPoint = new paper.Point(
@@ -284,7 +293,7 @@ function generatePointsInPath(path, exclude) {
     );
     if (!exclude.contains(testPoint)) {
       extraPoints.push([testPoint.x, testPoint.y]);
-      show(new paper.Path.Circle(testPoint, 1));
+      show(new paper.Path.Circle(testPoint, 0.02));
     }
   }
   console.log('done with extra points');
@@ -319,16 +328,24 @@ function loadFileAdjustCanvas({
 
 function processFile(filename) {
   console.log(`processing ${filename}`);
-  const actualPath = loadFileAdjustCanvas({
-    filename,
-    yOffset: threadHoleTotalSize * 2,
-    xPadding: threadHoleTotalSize * 2,
-    yPadding: threadHoleTotalSize * 2
+  let actualPath = loadFileAdjustCanvas({
+    filename
   });
   // showCut(actualPath);
 
   const outline = makeOutline();
   // actualPath.
+  console.log(outline.boundaryModel.bounds.height);
+  console.log(actualPath.bounds.height);
+  console.log(outline.boundaryModel.bounds.width - actualPath.bounds.width);
+  actualPath = actualPath.translate(
+    new paper.Point(
+      -actualPath.bounds.x + outline.boundaryModel.bounds.x + (outline.boundaryModel.bounds.width - actualPath.bounds.width)/2,
+      -actualPath.bounds.y + outline.boundaryModel.bounds.y + (outline.boundaryModel.bounds.height - actualPath.bounds.height)/2 
+    )
+  );
+
+  // showCut(actualPath)
   buildTriangles({path: actualPath, rect: outline.boundaryModel});
 
   // buildTriangles({ path: actualPath }); //, points: allPoints });
@@ -347,10 +364,16 @@ function processFile(filename) {
     asString: true
  })
 
- const svgEl = new JSDOM(svgOutput);
- svgEl.width = svgEl.width + "in"
- svgEl.height = svgEl.height + "in"
-
+ const dom = new JSDOM(svgOutput);
+ const document = dom.window.document;
+const svgEl = document.querySelector("svg");
+ svgEl.setAttribute('width', svgEl.getAttribute('width') + 'in');
+ svgEl.setAttribute('height', svgEl.getAttribute('height') + 'in');
+ const paths = document.querySelectorAll("path");
+ console.log(paths.length)
+ paths.forEach((path) => path.setAttribute('vector-effect', "non-scaling-stroke"))
+ 
+//  console.log(svgEl.outerHTML)
 
   
   fs.writeFileSync(outputFilename, svgEl.outerHTML);

@@ -12,12 +12,12 @@ var shuffle = require('shuffle-array');
 
 var Shape = require('@doodle3d/clipper-js');
 
-const threadHoleSize = pixelInches(0.1);
-const threadHoleBuffer = pixelInches(0.05);
-const threadHoleTotalSize = threadHoleSize + threadHoleBuffer;
-
 const args = require('minimist')(process.argv.slice(2));
 const debug = args.debug;
+
+const threadHoleSize = pixelInches(Number.parseFloat(args.holeSize) || 0.25);
+const threadHoleBuffer = pixelInches(0.1);
+const threadHoleTotalSize = threadHoleSize + threadHoleBuffer;
 
 if (!debug) {
   console.log = (s) => {}
