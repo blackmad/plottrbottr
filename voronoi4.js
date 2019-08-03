@@ -26,6 +26,10 @@ if (!debug) {
 console.log('debug', debug);
 args._.forEach(processFile);
 
+function isArgTrue(arg) {
+  return arg != 'no' && arg != 'false';
+}
+
 function fixPoint({ point, shape }) {
   return new paper.Point(
     point.x + shape.bounds.x,
@@ -90,24 +94,29 @@ function bufferPoints(buffer, points) {
     return null;
   }
 
-  const roundedPolygon = new paper.Path(
-    roundedShape.paths[0].map(p => {
+  const roundedPolygons = 
+    roundedShape.paths.map((path) => new paper.Path(path.map(p => {
       return new paper.Point(p.X / scaleFactor, p.Y / scaleFactor);
-    })
-  );
-  // console.log(roundedPolygon);
+    })));
 
-  return roundedPolygon;
+  return roundedPolygons;
 }
 
 function show(path, color) {
   if (debug) {
-    paper.project.activeLayer.addChild(path);
+    let paths = [path];
+    if (_.isArray(path)) {
+      paths = path;
+    }
 
-    path.style = {
-      strokeWidth: 1,
-      strokeColor: color || 'green'
-    };
+    paths.forEach((path) => {
+      paper.project.activeLayer.addChild(path);
+
+      path.style = {
+        strokeWidth: 1,
+        strokeColor: color || 'green'
+      };
+    })
   }
 }
 
@@ -216,17 +225,15 @@ function buildTriangles({ path }) {
   const outerShape = path;
 
   show(new paper.Path(approxShape(path)), 'brown');
-  let innerShape = bufferPath(-pointInches(0.1), path);
-  show(innerShape, 'brown');
-  innerShape.closePath();
+  let innerShapes = bufferPath(-pointInches(0.1), path);
+  show(innerShapes, 'brown');
+  console.log(innerShapes)
+  innerShapes.forEach(innerShape => processInnerShape({innerShape, outerShape}))
+}
 
-  // const shouldSubtract = true;
-
-  let veryInnerShape = bufferPath(-pointInches(0.2), path);
-  show(veryInnerShape, 'brown');
-  if (veryInnerShape) {
-    veryInnerShape.closePath();
-  }
+function processInnerShape({outerShape, innerShape}) {
+  let veryInnerShapes = bufferPath(-pointInches(0.2), outerShape);
+  show(veryInnerShapes, 'brown');
 
   const numPointsToGet = 50;
   const points = pointsToArray(approxShape(innerShape, numPointsToGet));
@@ -239,12 +246,12 @@ function buildTriangles({ path }) {
   const delaunay = Delaunay.from(allPoints);
   console.log('done');
   let polygonArray = Array.from(delaunay.trianglePolygons());
-  if (args.voronoi) {
+  if (isArgTrue(args.voronoi)) {
     const voronoi = delaunay.voronoi([
-      path.bounds.x,
-      path.bounds.y,
-      path.bounds.x + path.bounds.width,
-      path.bounds.y + path.bounds.height
+      outerShape.bounds.x,
+      outerShape.bounds.y,
+      outerShape.bounds.x + outerShape.bounds.width,
+      outerShape.bounds.y + outerShape.bounds.height
     ]);
     polygonArray = Array.from(voronoi.cellPolygons());
   }
@@ -254,15 +261,18 @@ function buildTriangles({ path }) {
     const points = polygon.map(p => new paper.Point(p[0], p[1]));
     // const tri = new paper.Path(points);
     // showCut(tri);
-    const smallShape = bufferPoints(-pointInches(0.02), points);
+    let smallShape = bufferPoints(-pointInches(args.outlineSize || 0.02), points);
     if (smallShape) {
+      smallShape = smallShape[0];
       smallShape.closePath();
       // showCut(smallShape)
 
       let cutOffShape = smallShape.intersect(innerShape);
 
-      if (args.shouldSubtract && veryInnerShape) {
-        cutOffShape = cutOffShape.subtract(veryInnerShape);
+      if (isArgTrue(args.subtract) && veryInnerShapes) {
+        veryInnerShapes.forEach((veryInnerShape) =>
+          cutOffShape = cutOffShape.subtract(veryInnerShape)
+        )
       }
 
       // cutOffShape.translate(new paper.Point(0, threadHoleTotalSize * 2));
