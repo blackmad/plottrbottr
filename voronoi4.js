@@ -209,9 +209,11 @@ function addHole({ path, size, buffer }) {
 }
 
 function buildTriangles({ path }) {
-  const outerShape = bufferPath(1, path);
-  outerShape.closePath();
-  show(outerShape, 'brown');
+  // let outerShape = bufferPath(1, path);
+  // outerShape.closePath();
+  // show(outerShape, 'brown');
+  // outerShape = outerShape.unite(path);
+  const outerShape = path;
 
   show(new paper.Path(approxShape(path)), 'brown');
   let innerShape = bufferPath(-pointInches(0.1), path);
