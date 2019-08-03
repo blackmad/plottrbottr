@@ -236,7 +236,7 @@ function processInnerShape({outerShape, innerShape}) {
   let veryInnerShapes = bufferPath(-pointInches(0.2), outerShape);
   show(veryInnerShapes, 'brown');
 
-  const numPointsToGet = 50;
+  const numPointsToGet = args.numPoints || 50;
   const points = pointsToArray(approxShape(innerShape, numPointsToGet));
   points.forEach(p => show(new paper.Path.Circle(p, 1), 'blue'));
 
