@@ -8,9 +8,10 @@ const _ = require('lodash');
 
 var pathModule = require('path');
 
-var shuffle = require('shuffle-array');
-
 var Shape = require('@doodle3d/clipper-js');
+
+const jsdom = require("jsdom");
+const { JSDOM } = jsdom;
 
 const args = require('minimist')(process.argv.slice(2));
 const debug = args.debug;
@@ -166,6 +167,7 @@ function loadAndResizeFile({filename, yOffset = 0, xOffset = 0}) {
   );
   console.log(`new size: ${inchPoints(actualPath.bounds.width)} x ${inchPoints(actualPath.bounds.height)}`)
   console.log(`new size: ${inchPoints(svgItem.bounds.width)} x ${inchPoints(svgItem.bounds.height)}`)
+  svgItem.remove();
 
   // console.log(svgItem.bounds.width, svgItem.bounds.height);
   return actualPath;
@@ -227,7 +229,6 @@ function buildTriangles({ path }) {
   show(new paper.Path(approxShape(path)), 'brown');
   let innerShapes = bufferPath(-pointInches(0.1), path);
   show(innerShapes, 'brown');
-  console.log(innerShapes)
   innerShapes.forEach(innerShape => processInnerShape({innerShape, outerShape}))
 }
 
@@ -315,23 +316,23 @@ function loadFileAdjustCanvas({filename, xOffset = 0, yOffset = 0, xPadding = 0,
   paper.settings.insertItems = false;
   let actualPath = loadAndResizeFile({filename, xOffset, yOffset});
 
-  const oldProject = paper.project;
-  const project = new paper.Project(
-    new paper.Size(
-      actualPath.bounds.width + xPadding + 1,
-      actualPath.bounds.height + yPadding + 1
-    )
-  );
-  project.activate();
-  oldProject.remove();
-
-  actualPath = loadAndResizeFile({filename, xOffset, yOffset});
   if (!actualPath.closed) {
     console.log('not closed outer ring');
     process.exit(1);
   }
   return actualPath;
+}
 
+function fixSVG(svgString) {
+  const dom = new JSDOM(svgString);
+  const document = dom.window.document;
+
+  const paths = document.querySelectorAll('path[d=""]');
+  console.log(`have ${paths.length} empty Ds to remove`)
+  paths.forEach((path) => path.remove())
+  
+  const svgEl = document.querySelector("svg");
+  return svgEl.outerHTML;
 }
 
 function processFile(filename) {
@@ -351,7 +352,8 @@ function processFile(filename) {
   const outputFilename = interpolate(outputTemplate, {
     basePath: pathModule.basename(filename).split('.')[0]
   });
-  fs.writeFileSync(outputFilename, paper.project.exportSVG({ asString: true, bounds: 'content' }));
+  const svgString = paper.project.exportSVG({ asString: true, bounds: 'content' });
+  fs.writeFileSync(outputFilename, fixSVG(svgString));
 
   var opn = require('opn');
   if (args.open) {
