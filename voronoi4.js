@@ -15,8 +15,8 @@ var Shape = require('@doodle3d/clipper-js');
 const args = require('minimist')(process.argv.slice(2));
 const debug = args.debug;
 
-const threadHoleSize = pixelInches(Number.parseFloat(args.holeSize) || 0.25);
-const threadHoleBuffer = pixelInches(0.1);
+const threadHoleSize = pointInches(Number.parseFloat(args.holeSize) || 0.25);
+const threadHoleBuffer = pointInches(0.1);
 const threadHoleTotalSize = threadHoleSize + threadHoleBuffer;
 
 if (!debug) {
@@ -102,6 +102,8 @@ function bufferPoints(buffer, points) {
 
 function show(path, color) {
   if (debug) {
+    paper.project.activeLayer.addChild(path);
+
     path.style = {
       strokeWidth: 1,
       strokeColor: color || 'green'
@@ -110,14 +112,21 @@ function show(path, color) {
 }
 
 function showCut(path, color) {
+  paper.project.activeLayer.addChild(path);
   path.style = {
     strokeWidth: 1,
     strokeColor: color || 'red'
   };
 }
 
-function pixelInches(n) {
-  return n * 96;
+// some people say 96, illustrator says 72
+
+function pointInches(n) {
+  return n * 72;
+}
+
+function inchPoints(n) {
+  return n / 72;
 }
 
 function loadAndResizeFile({filename, yOffset = 0, xOffset = 0}) {
@@ -133,19 +142,23 @@ function loadAndResizeFile({filename, yOffset = 0, xOffset = 0}) {
     // actualPath = path.children[0];
   }
   const maxSizeInches = 3;
-  const maxSizePixels = pixelInches(maxSizeInches);
+  const maxSizePixels = pointInches(maxSizeInches);
+  console.log(`current size: ${inchPoints(actualPath.bounds.width)} x ${inchPoints(actualPath.bounds.height)}`)
   const scale = Math.min(
     maxSizePixels / actualPath.bounds.width,
     maxSizePixels / actualPath.bounds.height
   );
-  console.log(svgItem.bounds.width, svgItem.bounds.height);
-  console.log(scale);
+  // console.log(svgItem.bounds.width, svgItem.bounds.height);
+  // console.log(scale);
 
   svgItem = svgItem.scale(scale);
   svgItem.translate(
     new paper.Point(-actualPath.bounds.x + xOffset, -actualPath.bounds.y + yOffset)
   );
-  console.log(svgItem.bounds.width, svgItem.bounds.height);
+  console.log(`new size: ${inchPoints(actualPath.bounds.width)} x ${inchPoints(actualPath.bounds.height)}`)
+  console.log(`new size: ${inchPoints(svgItem.bounds.width)} x ${inchPoints(svgItem.bounds.height)}`)
+
+  // console.log(svgItem.bounds.width, svgItem.bounds.height);
   return actualPath;
 }
 
@@ -167,7 +180,7 @@ function addHole({ path, size, buffer }) {
     const intersection = path1.subtract(path2, {insert: false, trace: false});
     // showCut(intersection, 'blue')
     if (intersection) {
-      console.log(intersection.length);
+      // console.log(intersection.length);
       return intersection.length < path1.length * 0.8;
     }
     return false;
@@ -201,13 +214,13 @@ function buildTriangles({ path }) {
   show(outerShape, 'brown');
 
   show(new paper.Path(approxShape(path)), 'brown');
-  let innerShape = bufferPath(-pixelInches(0.1), path);
+  let innerShape = bufferPath(-pointInches(0.1), path);
   show(innerShape, 'brown');
   innerShape.closePath();
 
   // const shouldSubtract = true;
 
-  let veryInnerShape = bufferPath(-pixelInches(0.2), path);
+  let veryInnerShape = bufferPath(-pointInches(0.2), path);
   show(veryInnerShape, 'brown');
   if (veryInnerShape) {
     veryInnerShape.closePath();
@@ -239,7 +252,7 @@ function buildTriangles({ path }) {
     const points = polygon.map(p => new paper.Point(p[0], p[1]));
     // const tri = new paper.Path(points);
     // showCut(tri);
-    const smallShape = bufferPoints(-pixelInches(0.02), points);
+    const smallShape = bufferPoints(-pointInches(0.02), points);
     if (smallShape) {
       smallShape.closePath();
       // showCut(smallShape)
@@ -287,6 +300,7 @@ function pointsToArray(points) {
 
 function loadFileAdjustCanvas({filename, xOffset = 0, yOffset = 0, xPadding = 0, yPadding = 0}) {
   paper.setup([10, 10]);
+  paper.settings.insertItems = false;
   let actualPath = loadAndResizeFile({filename, xOffset, yOffset});
 
   const oldProject = paper.project;
@@ -325,7 +339,7 @@ function processFile(filename) {
   const outputFilename = interpolate(outputTemplate, {
     basePath: pathModule.basename(filename).split('.')[0]
   });
-  fs.writeFileSync(outputFilename, paper.project.exportSVG({ asString: true }));
+  fs.writeFileSync(outputFilename, paper.project.exportSVG({ asString: true, bounds: 'content' }));
 
   var opn = require('opn');
   if (args.open) {
