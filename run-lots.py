@@ -17,11 +17,7 @@ def runWithTimeout(cmd):
 
 args = [
   ['--voronoi', ['yes', 'no']],
-  ['--subtract', ['yes', 'no']],
-  [
-  	['--outlineSize', '0.02', '--numPoints', '50'],
-  	['--outlineSize', '0.04', '--numPoints', '25']
-  ]
+  ['--subtract', ['yes', 'no']]
 ]
 
 
@@ -42,7 +38,7 @@ def processArgsHelper(currentCommand, args, callback):
 def processArgs(callback):
   return processArgsHelper([], args, callback)
 
-numIterations = 5
+numIterations = 10
 for file in sys.argv[1:]:
   for i in range(numIterations):
     def processFileCallback(argArray):

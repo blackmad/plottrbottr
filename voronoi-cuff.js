@@ -30,7 +30,7 @@ var StraightCuffOuter = require('./straight-cuff-outer').StraightCuffOuter;
 const args = require('minimist')(process.argv.slice(2));
 const debug = args.debug;
 
-const cuffWidth = pixelInches(7.5);
+const cuffWidth = pixelInches(args.wristSize || 6.8);
 const cuffHeight = pixelInches(2);
 
 if (!debug) {
@@ -166,7 +166,7 @@ function buildTriangles({ path, outerModel }) {
 
   let rectPoints = [];
 
-  if (!args.voronoi) {
+  if (isArgFalse(args.voronoi)) {
     console.log('rect points!');
     rectPoints = pointsToArray(approxShape(outerModel, numPointsToGet));
     console.log(rectPoints);
@@ -304,8 +304,17 @@ function processFile(filename) {
 
   console.log('all done, writing out');
 
-  const interpolate = require('interpolate-string');
-  let outputTemplate = args.outputTemplate || '{{basePath}}-voronoi4.svg';
+	const interpolate = require('interpolate-string');
+	
+	let argStr = '';
+	for (const [key, value] of Object.entries(args)) {
+		if (key != '_') {
+		console.log('value', value);
+		console.log('key', key);
+		argStr += key.replace('-', '') + ':' + (value? value.toString().replace(' ', '--'): 'null');
+		}
+	}
+  let outputTemplate = args.outputTemplate || `{{basePath}}-voronoi-cuff-${argStr}-${Math.floor(Math.random()*10000)}.svg`;
 
   const outputFilename = interpolate(outputTemplate, {
     basePath: pathModule.basename(filename).split('.')[0]

@@ -40,7 +40,7 @@ module.exports.showPathCut = function(path, color) {
 
 module.exports.showCut = function(path, color) {
   if (_.isArray(path)) {
-    path.forEach(p => module.exports.showPathCut(p));
+    path.forEach(p => module.exports.showPathCut(p, color));
   } else {
     module.exports.showPathCut(path);
   }
@@ -107,7 +107,7 @@ module.exports.bufferPoints = function(buffer, points) {
 };
 
 module.exports.bufferPath = function({buffer, path, numPoints}) {
-	console.log('path', path);
+	// console.log('path', path);
   const points = module.exports.approxShape(path, numPoints);
   // console.log(points);
   return module.exports.bufferPoints(buffer, points);
@@ -133,8 +133,6 @@ module.exports.getRelativePoint = function({ shape, pos }) {
 };
 
 module.exports.generatePointsInPath = function({path, exclude, numExtraPoints}) {
-	numExtraPoints = numExtraPoints || 0;
-
   console.log('making extra points', numExtraPoints);
   const extraPoints = [];
   while (extraPoints.length < numExtraPoints * 2) {

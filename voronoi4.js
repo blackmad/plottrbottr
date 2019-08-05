@@ -11,12 +11,12 @@ var pathModule = require('path');
 const args = require('minimist')(process.argv.slice(2));
 const debug = args.debug;
 
-const threadHoleSize = pointInches(Number.parseFloat(args.holeSize) || 0.25);
-const threadHoleBuffer = pointInches(0.1);
+const threadHoleSize = pointInches(Number.parseFloat(args.holeSize) || 0.1);
+const threadHoleBuffer = pointInches(0.04);
 const threadHoleTotalSize = threadHoleSize + threadHoleBuffer;
 
 const utils = require('./utils.js');
-const { showCut, show, approxShape, isArgTrue, bufferPath, bufferPoints, generatePointsInPath } = utils;
+const { writeSVG, showCut, show, approxShape, isArgTrue, bufferPath, bufferPoints, generatePointsInPath } = utils;
 
 if (!debug) {
   console.log = (s) => {}
@@ -47,7 +47,7 @@ function loadAndResizeFile({filename, yOffset = 0, xOffset = 0}) {
     console.log('num children children', path.children.length);
     // actualPath = path.children[0];
   }
-  const maxSizeInches = 3;
+  const maxSizeInches = 2.5;
   const maxSizePixels = pointInches(maxSizeInches);
   console.log(`current size: ${inchPoints(actualPath.bounds.width)} x ${inchPoints(actualPath.bounds.height)}`)
   const scale = Math.min(
@@ -84,11 +84,16 @@ function addHole({ path, size, buffer }) {
   let threadHoleOuter = new paper.Path.Circle(initial, size + buffer);
 
   function touchingEnough(path1, path2) {
-    const intersection = path1.subtract(path2, {insert: false, trace: false});
+		console.log('length of path1', path1.length)
+		console.log('length of path1', path1.area)
+		
+		const intersection = path1.intersect(path2, {insert: false, trace: false});
+		console.log('length of path1 after subtract path2', intersection.length)
+		console.log('length of path1 after subtract path2', intersection.area)
     // showCut(intersection, 'blue')
     if (intersection) {
-      // console.log(intersection.length);
-      return intersection.length < path1.length * 0.8;
+      console.log(intersection.length);
+      return intersection.length < path1.length * 0.85;
     }
     return false;
   }
