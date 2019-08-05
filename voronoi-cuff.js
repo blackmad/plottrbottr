@@ -10,18 +10,18 @@ const _ = require('lodash');
 
 var pathModule = require('path');
 
-var shuffle = require('shuffle-array');
-
 const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
 
 const utils = require('./utils.js');
 const {
+	isArgTrue,
+	isArgFalse,
   showCut,
   show,
   approxShape,
-  bufferPath,
-  bufferPoints,
+	bufferPoints,
+	bufferPath,
   generatePointsInPath
 } = utils;
 
@@ -66,10 +66,22 @@ function loadAndResizeFile({ filename, yOffset = 0, xOffset = 0 }) {
     actualPath = _.sortBy(path.children, path => -path.length)[0];
     console.log('num children children', path.children.length);
     // actualPath = path.children[0];
-  }
+	}
+	
+	let scalingFactor = null;
+
+	if (args.expand) { 
+		scalingFactor = 1.1;
+	} else {
+		if (isArgTrue(args.invert)) {
+			scalingFactor = 0.65;
+		} else {
+			scalingFactor = 0.70;
+		}
+	}
   const scale = Math.min(
-    (cuffWidth * 0.65) / actualPath.bounds.width,
-    (cuffHeight * 0.65) / actualPath.bounds.height
+    (cuffWidth * scalingFactor) / actualPath.bounds.width,
+    (cuffHeight * scalingFactor) / actualPath.bounds.height
   );
   console.log(svgItem.bounds.width, svgItem.bounds.height);
   console.log(scale);
@@ -87,20 +99,16 @@ function loadAndResizeFile({ filename, yOffset = 0, xOffset = 0 }) {
   return actualPath;
 }
 
-function makeOutline() {
+function makeOutline(path) {
   // console.log
   const outer = new StraightCuffOuter().make({
     height: pixelInches(2),
     wristCircumference: pixelInches(7),
     safeBorderWidth: pixelInches(0.25)
-  });
-  showCut(outer.outerModel);
+	});
+
   showCut(outer.holes);
   return outer;
-
-  // const outline = new paper.Path.Rectangle(new paper.Rectangle(new paper.Point(1, 1), new paper.Size(cuffWidth-2, cuffHeight-2)))
-  // showCut(outline)
-  return outline;
 }
 
 function addHole({ path, size, buffer }) {
@@ -149,26 +157,28 @@ function addHole({ path, size, buffer }) {
   showCut(threadHole);
 }
 
-function buildTriangles({ path, rect }) {
-  const outerShape = bufferPath(1, path)[0];
-  outerShape.closePath();
-  show(outerShape, 'brown');
-
+function buildTriangles({ path, outerModel }) {
   const numPointsToGet = 40 + Math.floor(Math.random() * 10);
-  const points = pointsToArray(approxShape(path, numPointsToGet));
+	let points = pointsToArray(approxShape(path, numPointsToGet));
+	// points = points.map((point) => fixPoint({point, shape: path}))
+	
   points.forEach(p => show(new paper.Path.Circle(p, 0.02), 'blue'));
 
   let rectPoints = [];
 
   if (!args.voronoi) {
     console.log('rect points!');
-    rectPoints = pointsToArray(approxShape(rect, numPointsToGet));
+    rectPoints = pointsToArray(approxShape(outerModel, numPointsToGet));
     console.log(rectPoints);
     rectPoints.forEach(p => show(new paper.Path.Circle(p, 0.02), 'blue'));
   }
 
-	const extraPoints = generatePointsInPath(rect, path,
-		5 + Math.random() * 5);
+	let numExtraPoints = args.extraPoints;
+	if (numExtraPoints == null || numExtraPoints == undefined) {
+		numExtraPoints = 5;
+	}
+	const extraPoints = generatePointsInPath({path: outerModel, exclude: path, numExtraPoints: numExtraPoints});
+	console.log(extraPoints);
 
   const allPoints = points.concat(extraPoints).concat(rectPoints);
 
@@ -178,10 +188,10 @@ function buildTriangles({ path, rect }) {
   let polygonArray = Array.from(delaunay.trianglePolygons());
   if (args.voronoi) {
     const voronoi = delaunay.voronoi([
-      rect.bounds.x,
-      rect.bounds.y,
-      rect.bounds.x + rect.bounds.width,
-      rect.bounds.y + rect.bounds.height
+      outerModel.bounds.x,
+      outerModel.bounds.y,
+      outerModel.bounds.x + outerModel.bounds.width,
+      outerModel.bounds.y + outerModel.bounds.height
     ]);
     polygonArray = Array.from(voronoi.cellPolygons());
   }
@@ -191,7 +201,7 @@ function buildTriangles({ path, rect }) {
     const points = polygon.map(p => new paper.Point(p[0], p[1]));
     // const tri = new paper.Path(points);
     // showCut(tri);
-    let smallShape = bufferPoints(-pixelInches(0.04), points);
+    let smallShape = bufferPoints(-pixelInches(args.borderSize/2 || 0.04), points);
     if (!smallShape || smallShape.area < 0.1) {
       // console.log('trying again')
       smallShape = bufferPoints(-pixelInches(0.03), points);
@@ -199,11 +209,20 @@ function buildTriangles({ path, rect }) {
 		if (smallShape) {
 			smallShape = smallShape[0];
       smallShape.closePath();
-      // showCut(smallShape)
+			// showCut(smallShape)
+			show(path, 'yellow');
 
-      let cutOffShape = smallShape.subtract(path);
-
-      // cutOffShape.translate(new paper.Point(0, threadHoleTotalSize * 2));
+			let cutOffShape = null;
+			if (isArgTrue(args.invert)) {
+				cutOffShape = smallShape.subtract(path);
+				cutOffShape = cutOffShape.intersect(outerModel);
+			} else {
+				if (args.expand) {
+					cutOffShape = smallShape.intersect(outerModel);
+				} else { 
+					cutOffShape = smallShape.intersect(path);
+				}
+			}
 
       showCut(cutOffShape);
     } else {
@@ -246,7 +265,7 @@ function processFile(filename) {
   });
   // showCut(actualPath);
 
-  const outline = makeOutline();
+  const outline = makeOutline(actualPath);
   // actualPath.
   console.log(outline.boundaryModel.bounds.height);
   console.log(actualPath.bounds.height);
@@ -260,10 +279,25 @@ function processFile(filename) {
         outline.boundaryModel.bounds.y +
         (outline.boundaryModel.bounds.height - actualPath.bounds.height) / 2
     )
-  );
+	);
+
+	let safeArea = outline.boundaryModel;
+	if (args.expand) {
+		safeArea = actualPath;
+		const buffered = bufferPath({path: actualPath, buffer: pixelInches(0.45), numPoints: 100});
+
+		if (isArgTrue(args.invert)) {
+			safeArea = bufferPath({path: actualPath, buffer: pixelInches(0.25), numPoints: 100})[0];
+			safeArea = safeArea.unite(outline.boundaryModel)
+		}
+		outline.outerModel = outline.outerModel.unite(buffered[0])
+	}
+
+	show(safeArea, 'pink')
+	showCut(outline.outerModel);
 
   // showCut(actualPath)
-  buildTriangles({ path: actualPath, rect: outline.boundaryModel });
+	buildTriangles({ path: actualPath, outerModel: safeArea})
 
   // buildTriangles({ path: actualPath }); //, points: allPoints });
   // addHole({ path: actualPath, size: threadHoleSize, buffer: threadHoleBuffer });
@@ -278,7 +312,8 @@ function processFile(filename) {
   });
 
   const svgOutput = paper.project.exportSVG({
-    asString: true
+		asString: true,
+		bounds: 'content'
   });
 
   const dom = new JSDOM(svgOutput);
@@ -293,7 +328,6 @@ function processFile(filename) {
   );
 
   //  console.log(svgEl.outerHTML)
-
   fs.writeFileSync(outputFilename, svgEl.outerHTML);
 
   var opn = require('opn');

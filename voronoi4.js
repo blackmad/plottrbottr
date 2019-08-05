@@ -8,11 +8,6 @@ const _ = require('lodash');
 
 var pathModule = require('path');
 
-var Shape = require('@doodle3d/clipper-js');
-
-const jsdom = require("jsdom");
-const { JSDOM } = jsdom;
-
 const args = require('minimist')(process.argv.slice(2));
 const debug = args.debug;
 
@@ -128,20 +123,20 @@ function buildTriangles({ path }) {
   const outerShape = path;
 
   show(new paper.Path(approxShape(path)), 'brown');
-  let innerShapes = bufferPath(-pointInches(0.1), path);
+  let innerShapes = bufferPath({buffer: -pointInches(0.1), path});
   show(innerShapes, 'brown');
   innerShapes.forEach(innerShape => processInnerShape({innerShape, outerShape}))
 }
 
 function processInnerShape({outerShape, innerShape}) {
-  let veryInnerShapes = bufferPath(-pointInches(0.2), outerShape);
+  let veryInnerShapes = bufferPath({buffer: -pointInches(0.2), path: outerShape});
   show(veryInnerShapes, 'brown');
 
   const numPointsToGet = args.numPoints || 50;
   const points = pointsToArray(approxShape(innerShape, numPointsToGet));
   points.forEach(p => show(new paper.Path.Circle(p, 1), 'blue'));
 
-  const extraPoints = generatePointsInPath(innerShape);
+  const extraPoints = generatePointsInPath({path: innerShape});
   const allPoints = points.concat(extraPoints);
 
   console.log('triangulating');
@@ -206,18 +201,6 @@ function loadFileAdjustCanvas({filename, xOffset = 0, yOffset = 0, xPadding = 0,
   return actualPath;
 }
 
-function fixSVG(svgString) {
-  const dom = new JSDOM(svgString);
-  const document = dom.window.document;
-
-  const paths = document.querySelectorAll('path[d=""]');
-  console.log(`have ${paths.length} empty Ds to remove`)
-  paths.forEach((path) => path.remove())
-  
-  const svgEl = document.querySelector("svg");
-  return svgEl.outerHTML;
-}
-
 function processFile(filename) {
   console.log(`processing ${filename}`);
   const actualPath = loadFileAdjustCanvas({filename, yOffset: threadHoleTotalSize*2, xPadding: threadHoleTotalSize*2, yPadding: threadHoleTotalSize*2})
@@ -234,9 +217,9 @@ function processFile(filename) {
 
   const outputFilename = interpolate(outputTemplate, {
     basePath: pathModule.basename(filename).split('.')[0]
-  });
-  const svgString = paper.project.exportSVG({ asString: true, bounds: 'content' });
-  fs.writeFileSync(outputFilename, fixSVG(svgString));
+	});
+	writeSVG(outputFilename);
+
 
   var opn = require('opn');
   if (args.open) {
