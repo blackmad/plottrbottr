@@ -1,3 +1,5 @@
+// use 'esversion: 6';
+
 const Delaunay = require('d3-delaunay').Delaunay;
 
 var fs = require('fs');
@@ -10,19 +12,26 @@ var pathModule = require('path');
 
 var shuffle = require('shuffle-array');
 
-var Shape = require('@doodle3d/clipper-js');
-
-const jsdom = require("jsdom");
+const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
 
-console.log(require('./straight-cuff-outer'));
+const utils = require('./utils.js');
+const {
+  showCut,
+  show,
+  approxShape,
+  bufferPath,
+  bufferPoints,
+  generatePointsInPath
+} = utils;
+
 var StraightCuffOuter = require('./straight-cuff-outer').StraightCuffOuter;
 
 const args = require('minimist')(process.argv.slice(2));
 const debug = args.debug;
 
-const cuffWidth = pixelInches(7.5)
-const cuffHeight = pixelInches(2)
+const cuffWidth = pixelInches(7.5);
+const cuffHeight = pixelInches(2);
 
 if (!debug) {
   console.log = s => {};
@@ -42,88 +51,6 @@ function getRelativePoint({ shape, pos }) {
   return fixPoint({ shape, point: shape.getPointAt(pos) });
 }
 
-function approxShape(shape, numPointsToGet = 200, useRelative = false) {
-  // console.log('in appro: ', shape);
-  let points = [];
-  let shapeToUse = shape;
-
-  if (shape instanceof paper.CompoundPath) {
-    shapeToUse = shape.children[0];
-  }
-  // console.log(actualPath)
-  for (let i = 0; i < numPointsToGet; i++) {
-    if (useRelative) {
-      points.push(
-        getRelativePoint({
-          shape: shapeToUse,
-          pos: (i / numPointsToGet) * shapeToUse.length
-        })
-      );
-    } else {
-      points.push(
-        shapeToUse.getPointAt((i / numPointsToGet) * shapeToUse.length)
-      );
-    }
-  }
-  return points;
-}
-
-function bufferPath(buffer, path, numPoints) {
-  const points = approxShape(path, numPoints);
-  // console.log(points);
-  return bufferPoints(buffer, points);
-}
-
-function bufferPoints(buffer, points) {
-  const scaleFactor = 1000;
-  const roundingBit = (1 / scaleFactor) * 10;
-  const scaledPoints = points.map(p => {
-    return {
-      X: p.x * scaleFactor + roundingBit,
-      Y: p.y * scaleFactor + roundingBit
-    };
-  });
-  const shape = new Shape.default([scaledPoints]);
-
-  const roundedShape = shape.offset(buffer * scaleFactor, {
-    jointType: 'jtRound',
-    endType: 'etClosedPolygon',
-    miterLimit: 2.0,
-    roundPrecision: 0.25
-  });
-
-  if (!roundedShape || !roundedShape.paths || roundedShape.paths.length == 0) {
-    return null;
-  }
-
-  const roundedPolygon = new paper.Path(
-    roundedShape.paths[0].map(p => {
-      return new paper.Point(p.X / scaleFactor, p.Y / scaleFactor);
-    })
-  );
-  // console.log(roundedPolygon);
-
-  return roundedPolygon;
-}
-
-function show(path, color) {
-  if (debug) {
-    path.style = {
-      strokeWidth: '1px',
-      strokeColor: color || 'green',
-      fill: 'none'
-    };
-  }
-}
-
-function showCut(path, color) {
-  path.style = {
-    strokeWidth: '1px',
-    strokeColor: color || 'red',
-    fill: 'none'
-  };
-}
-
 function pixelInches(n) {
   return n;
 }
@@ -141,19 +68,19 @@ function loadAndResizeFile({ filename, yOffset = 0, xOffset = 0 }) {
     // actualPath = path.children[0];
   }
   const scale = Math.min(
-    cuffWidth*0.65 / actualPath.bounds.width,
-    cuffHeight*0.65 / actualPath.bounds.height
+    (cuffWidth * 0.65) / actualPath.bounds.width,
+    (cuffHeight * 0.65) / actualPath.bounds.height
   );
   console.log(svgItem.bounds.width, svgItem.bounds.height);
   console.log(scale);
 
   svgItem = svgItem.scale(scale);
   svgItem.translate(
-        new paper.Point(
-          -actualPath.bounds.x + (cuffWidth - actualPath.bounds.width)/2,
-          -actualPath.bounds.y + (cuffHeight - actualPath.bounds.height)/2 
-        )
-      );
+    new paper.Point(
+      -actualPath.bounds.x + (cuffWidth - actualPath.bounds.width) / 2,
+      -actualPath.bounds.y + (cuffHeight - actualPath.bounds.height) / 2
+    )
+  );
 
   // showCut(new paper.Path.Rectangle(actualPath.bounds));
   console.log(svgItem.bounds.width, svgItem.bounds.height);
@@ -163,11 +90,12 @@ function loadAndResizeFile({ filename, yOffset = 0, xOffset = 0 }) {
 function makeOutline() {
   // console.log
   const outer = new StraightCuffOuter().make({
-    height: pixelInches(2), 
-    wristCircumference: pixelInches(7), 
+    height: pixelInches(2),
+    wristCircumference: pixelInches(7),
     safeBorderWidth: pixelInches(0.25)
   });
   showCut(outer.outerModel);
+  showCut(outer.holes);
   return outer;
 
   // const outline = new paper.Path.Rectangle(new paper.Rectangle(new paper.Point(1, 1), new paper.Size(cuffWidth-2, cuffHeight-2)))
@@ -222,24 +150,25 @@ function addHole({ path, size, buffer }) {
 }
 
 function buildTriangles({ path, rect }) {
-  const outerShape = bufferPath(1, path);
+  const outerShape = bufferPath(1, path)[0];
   outerShape.closePath();
   show(outerShape, 'brown');
 
-  const numPointsToGet = 40 + Math.floor(Math.random()*10);
+  const numPointsToGet = 40 + Math.floor(Math.random() * 10);
   const points = pointsToArray(approxShape(path, numPointsToGet));
   points.forEach(p => show(new paper.Path.Circle(p, 0.02), 'blue'));
 
   let rectPoints = [];
-  
+
   if (!args.voronoi) {
-    console.log('rect points!')
+    console.log('rect points!');
     rectPoints = pointsToArray(approxShape(rect, numPointsToGet));
     console.log(rectPoints);
     rectPoints.forEach(p => show(new paper.Path.Circle(p, 0.02), 'blue'));
   }
 
-  const extraPoints = generatePointsInPath(rect, path);
+	const extraPoints = generatePointsInPath(rect, path,
+		5 + Math.random() * 5);
 
   const allPoints = points.concat(extraPoints).concat(rectPoints);
 
@@ -263,11 +192,12 @@ function buildTriangles({ path, rect }) {
     // const tri = new paper.Path(points);
     // showCut(tri);
     let smallShape = bufferPoints(-pixelInches(0.04), points);
-    if (!smallShape || smallShape.area < 0.1)  { 
-      console.log('trying again')
+    if (!smallShape || smallShape.area < 0.1) {
+      // console.log('trying again')
       smallShape = bufferPoints(-pixelInches(0.03), points);
     }
-    if (smallShape) {
+		if (smallShape) {
+			smallShape = smallShape[0];
       smallShape.closePath();
       // showCut(smallShape)
 
@@ -280,24 +210,6 @@ function buildTriangles({ path, rect }) {
       console.log(`could not shrink :-( triagnel ${index}`);
     }
   });
-}
-
-function generatePointsInPath(path, exclude) {
-  console.log('making extra points');
-  const numExtraPoints = 5 + Math.floor(5 * Math.random()); 
-  const extraPoints = [];
-  while (extraPoints.length < numExtraPoints * 2) {
-    const testPoint = new paper.Point(
-      Math.random() * path.bounds.width + path.bounds.x,
-      Math.random() * path.bounds.height + path.bounds.y
-    );
-    if (!exclude.contains(testPoint)) {
-      extraPoints.push([testPoint.x, testPoint.y]);
-      show(new paper.Path.Circle(testPoint, 0.02));
-    }
-  }
-  console.log('done with extra points');
-  return extraPoints;
 }
 
 function pointsToArray(points) {
@@ -315,7 +227,8 @@ function loadFileAdjustCanvas({
   xPadding = 0,
   yPadding = 0
 }) {
-  paper.setup([cuffWidth+4, cuffHeight]);
+  paper.setup([cuffWidth + 4, cuffHeight]);
+  paper.settings.insertItems = false;
 
   let actualPath = loadAndResizeFile({ filename, xOffset, yOffset });
 
@@ -340,13 +253,17 @@ function processFile(filename) {
   console.log(outline.boundaryModel.bounds.width - actualPath.bounds.width);
   actualPath = actualPath.translate(
     new paper.Point(
-      -actualPath.bounds.x + outline.boundaryModel.bounds.x + (outline.boundaryModel.bounds.width - actualPath.bounds.width)/2,
-      -actualPath.bounds.y + outline.boundaryModel.bounds.y + (outline.boundaryModel.bounds.height - actualPath.bounds.height)/2 
+      -actualPath.bounds.x +
+        outline.boundaryModel.bounds.x +
+        (outline.boundaryModel.bounds.width - actualPath.bounds.width) / 2,
+      -actualPath.bounds.y +
+        outline.boundaryModel.bounds.y +
+        (outline.boundaryModel.bounds.height - actualPath.bounds.height) / 2
     )
   );
 
   // showCut(actualPath)
-  buildTriangles({path: actualPath, rect: outline.boundaryModel});
+  buildTriangles({ path: actualPath, rect: outline.boundaryModel });
 
   // buildTriangles({ path: actualPath }); //, points: allPoints });
   // addHole({ path: actualPath, size: threadHoleSize, buffer: threadHoleBuffer });
@@ -360,22 +277,23 @@ function processFile(filename) {
     basePath: pathModule.basename(filename).split('.')[0]
   });
 
-  const svgOutput = paper.project.exportSVG({ 
+  const svgOutput = paper.project.exportSVG({
     asString: true
- })
+  });
 
- const dom = new JSDOM(svgOutput);
- const document = dom.window.document;
-const svgEl = document.querySelector("svg");
- svgEl.setAttribute('width', svgEl.getAttribute('width') + 'in');
- svgEl.setAttribute('height', svgEl.getAttribute('height') + 'in');
- const paths = document.querySelectorAll("path");
- console.log(paths.length)
- paths.forEach((path) => path.setAttribute('vector-effect', "non-scaling-stroke"))
- 
-//  console.log(svgEl.outerHTML)
+  const dom = new JSDOM(svgOutput);
+  const document = dom.window.document;
+  const svgEl = document.querySelector('svg');
+  svgEl.setAttribute('width', svgEl.getAttribute('width') + 'in');
+  svgEl.setAttribute('height', svgEl.getAttribute('height') + 'in');
+  const paths = document.querySelectorAll('path');
+  console.log(paths.length);
+  paths.forEach(path =>
+    path.setAttribute('vector-effect', 'non-scaling-stroke')
+  );
 
-  
+  //  console.log(svgEl.outerHTML)
+
   fs.writeFileSync(outputFilename, svgEl.outerHTML);
 
   var opn = require('opn');

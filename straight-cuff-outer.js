@@ -1,4 +1,8 @@
 const paper = require('paper');
+
+const _ = require('lodash');
+
+
 function roundCorners(path, radius) {
   var segments = path.segments.slice(0);
   path.removeSegments();
@@ -25,8 +29,67 @@ function roundCorners(path, radius) {
   return path;
 }
 
+const MillimeterToInches = 0.0393701;
+const RivetRadius = 2.5 * MillimeterToInches;
+const BeltHoleRadius = 3 * MillimeterToInches;
+
+function makeEvenlySpacedBolts(numBolts, p1, p2) {
+    let line = new paper.Path.Line(p1, p2);
+
+    const circles = [];
+  _.times(numBolts * 3, boltNum => {
+    if ((boltNum - 1) % 3 == 0) {
+      const center = line.getPointAt(
+        (line.length * (boltNum + 1)) / (numBolts * 3 + 1)
+      );
+      const circle = new paper.Path.Circle(center, RivetRadius);
+      circles.push(circle);
+    }
+  });
+
+  return circles;
+}
+
 class StraightCuffOuter {
-  constructor() {}
+  makeHoles({ path, height, width }) {
+    const paddingDiff = Math.abs(this.topPadding - this.bottomPadding);
+    const guideLineLeftP1 = new paper.Point(
+      this.topPadding / 2 + RivetRadius / 2,
+      0
+    );
+    const guideLineLeftP2 = new paper.Point(
+      this.topPadding / 2 + paddingDiff + RivetRadius / 2,
+      height
+    );
+
+    const holes1 = makeEvenlySpacedBolts(
+      Math.floor(height),
+      guideLineLeftP1,
+      guideLineLeftP2
+    );
+
+    const guideLineRightP1 = new paper.Point(
+      width - this.topPadding / 2 - RivetRadius / 2,
+      0
+    );
+    const guideLineRightP2 = new paper.Point(
+      width - this.topPadding / 2 - paddingDiff - RivetRadius / 2,
+      height
+    );
+
+    const holes2 = makeEvenlySpacedBolts(
+      Math.floor(height),
+      guideLineRightP1,
+      guideLineRightP2
+		);
+
+    return [...holes1, ...holes2];
+  }
+
+  constructor() {
+		this.bottomPadding = 1.0;
+		this.topPadding = 0.8;
+	}
 
   make(options) {
     var { height, wristCircumference, safeBorderWidth, debug } = options;
@@ -45,6 +108,16 @@ class StraightCuffOuter {
     cuffOuter.add(new paper.Point(totalWidth, 0));
     roundCorners(cuffOuter, '0.2');
     cuffOuter.closed = true;
+
+		console.log('???')
+    const holes = this.makeHoles({
+      path: cuffOuter,
+      height,
+      width: totalWidth
+		});
+		console.log('xxxx')
+		console.log('holes', holes);
+
 
     const safeAreaPadding = 0.5;
     const safeAreaLength = wristCircumference;
@@ -71,10 +144,9 @@ class StraightCuffOuter {
     innerOptions.width = totalWidth;
     innerOptions.boundaryModel = safeArea;
     innerOptions.safeCone = safeCone;
-    innerOptions.outerModel = cuffOuter;
+		innerOptions.outerModel = cuffOuter;
+		innerOptions.holes = holes;
 
-    console.log(options);
-    console.log(innerOptions);
     return innerOptions;
 
     // const innerDesign = this.designMaker(innerOptions);
