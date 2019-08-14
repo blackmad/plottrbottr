@@ -3,8 +3,10 @@ import os
 import sys
 import subprocess
 
-if not os.path.exists('output'):
-  os.mkdir('output')
+outputDir = 'output6'
+
+if not os.path.exists(outputDir):
+  os.mkdir(outputDir)
 
 
 def runWithTimeout(cmd):
@@ -17,7 +19,7 @@ def runWithTimeout(cmd):
 
 args = [
   ['--voronoi', ['yes', 'no']],
-  ['--subtract', ['yes', 'no']]
+  ['--subtract', ['no']]
 ]
 
 
@@ -38,12 +40,12 @@ def processArgsHelper(currentCommand, args, callback):
 def processArgs(callback):
   return processArgsHelper([], args, callback)
 
-numIterations = 10
+numIterations = 1
 for file in sys.argv[1:]:
   for i in range(numIterations):
     def processFileCallback(argArray):
-      cmd = ['node', 'voronoi4.js', file, '--butt', 'no'] + argArray + [
-     '--outputTemplate', 'output/{{basePath}}-%s-%s.svg' % ('_'.join(argArray), i)]
+      cmd = ['node', 'voronoi4.js', file, '--holeSize', '0.04', '--butt', 'no'] + argArray + [
+     '--outputTemplate', '%s/{{basePath}}-%s-%s.svg' % (outputDir, '_'.join(argArray), i)]
       runWithTimeout(cmd)
     # print(i)
     processArgs(processFileCallback)

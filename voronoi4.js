@@ -16,7 +16,7 @@ const threadHoleBuffer = pointInches(0.04);
 const threadHoleTotalSize = threadHoleSize + threadHoleBuffer;
 
 const utils = require('./utils.js');
-const { writeSVG, showCut, show, approxShape, isArgTrue, bufferPath, bufferPoints, generatePointsInPath } = utils;
+const { writeSVG, showCut, show, approxShape, isArgTrue, bufferPath, bufferPoints, generatePointsInPath, roundCorners } = utils;
 
 if (!debug) {
   console.log = (s) => {}
@@ -93,7 +93,7 @@ function addHole({ path, size, buffer }) {
     // showCut(intersection, 'blue')
     if (intersection) {
       console.log(intersection.length);
-      return intersection.length < path1.length * 0.85;
+      return intersection.length < path1.length * 0.5;
     }
     return false;
   }
@@ -141,7 +141,7 @@ function processInnerShape({outerShape, innerShape}) {
   const points = pointsToArray(approxShape(innerShape, numPointsToGet));
   points.forEach(p => show(new paper.Path.Circle(p, 1), 'blue'));
 
-  const extraPoints = generatePointsInPath({path: innerShape});
+  const extraPoints = generatePointsInPath({path: innerShape, numExtraPoints: 10});
   const allPoints = points.concat(extraPoints);
 
   console.log('triangulating');
@@ -167,7 +167,11 @@ function processInnerShape({outerShape, innerShape}) {
     if (smallShape) {
       smallShape = smallShape[0];
       smallShape.closePath();
-      // showCut(smallShape)
+
+	 smallShape = roundCorners(smallShape, 2)
+	       smallShape.closePath();
+
+      
 
       let cutOffShape = smallShape.intersect(innerShape);
 

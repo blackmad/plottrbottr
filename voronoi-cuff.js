@@ -31,6 +31,7 @@ const args = require('minimist')(process.argv.slice(2));
 const debug = args.debug;
 
 const cuffWidth = pixelInches(args.wristSize || 6.8);
+console.log('cuffWidth', cuffWidth)
 const cuffHeight = pixelInches(2);
 
 if (!debug) {
@@ -102,8 +103,8 @@ function loadAndResizeFile({ filename, yOffset = 0, xOffset = 0 }) {
 function makeOutline(path) {
   // console.log
   const outer = new StraightCuffOuter().make({
-    height: pixelInches(2),
-    wristCircumference: pixelInches(7),
+    height: cuffHeight,
+    wristCircumference: cuffWidth,
     safeBorderWidth: pixelInches(0.25)
 	});
 
