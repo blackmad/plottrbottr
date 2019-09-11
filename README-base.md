@@ -1,6 +1,8 @@
 # Overview
 A tool for taking in an SVG and making it more interesting to plot or cut with the magic of voronois and delaunay triangulation.
 
+I guess somewhat inspried by trammel's [lace maker](https://bitbucket.org/hudson/boxer/src/tip/lace-maker?at=default)
+
 # Usage
 Requires a pretty recent version of node, I use 
      
@@ -63,71 +65,5 @@ Command line options mostly make sense
       --safeBorder SAFEBORDER
                             (in inches) width of border around the inner design
       --rounded             rounds corners of triangles/voronois
-
-# Examples
-    ## Triangles with 0 extra points
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/triangles-0.svg' --numExtraPoints 0
-important bits:
-
-    --numExtraPoints 0
-![](examples/output-png/triangles-0.png)
-## Triangles with 10 extra points
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/triangles-10.svg' --numExtraPoints 10
-important bits:
-
-    --numExtraPoints 10
-![](examples/output-png/triangles-10.png)
-## Triangles with 10 extra points + rounding
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/triangles-rounded-10.svg' --rounded --numExtraPoints 10
-important bits:
-
-    --rounded --numExtraPoints 10
-![](examples/output-png/triangles-rounded-10.png)
-## Triangles with 10 extra points + inner-subtract
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/triangles-subtract-10.svg' --subtract --numExtraPoints 10
-important bits:
-
-    --subtract --numExtraPoints 10
-![](examples/output-png/triangles-subtract-10.png)
-## Voronoi with 0 extra points
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/voronoi-0.svg' --voronoi --numExtraPoints 0
-important bits:
-
-    --voronoi --numExtraPoints 0
-![](examples/output-png/voronoi-0.png)
-## Voronoi with 10 extra points
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/voronoi-10.svg' --voronoi  --numExtraPoints 10
-important bits:
-
-    --voronoi  --numExtraPoints 10
-![](examples/output-png/voronoi-10.png)
-## Voronoi with 10 extra points + rounded
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/voronoi-rounded-10.svg' --rounded --voronoi  --numExtraPoints 10
-important bits:
-
-    --rounded --voronoi  --numExtraPoints 10
-![](examples/output-png/voronoi-rounded-10.png)
-## Voronoi with 10 extra points + inner subtract
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/voronoi-subtract-10.svg' --voronoi --subtract --numExtraPoints 10
-important bits:
-
-    --voronoi --subtract --numExtraPoints 10
-![](examples/output-png/voronoi-subtract-10.png)
-## Voronoi with 10 extra points + inner subtract + see debugging
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/voronoi-subtract-debug-10.svg' --voronoi --subtract --debug --numExtraPoints 10
-important bits:
-
-    --voronoi --subtract --debug --numExtraPoints 10
-![](examples/output-png/voronoi-subtract-debug-10.png)
-## Voronoi with 10 extra points + inner subtract + add pendant hole
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/voronoi-subtract-hole-10.svg' --addHole --voronoi --subtract --numExtraPoints 10
-important bits:
-
-    --addHole --voronoi --subtract --numExtraPoints 10
-![](examples/output-png/voronoi-subtract-hole-10.png)
-## Triangular caterpillar with center hole
-    node lace-maker2.js examples/input/caterpillar.svg --outputTemplate 'examples/output-svg/caterpillar-hole.svg' --addHole
-important bits:
-
-    --addHole
-![](examples/output-png/caterpillar-hole.png)
+    
+ # Examples

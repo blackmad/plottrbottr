@@ -19,6 +19,7 @@
     "libtess": "^1.2.2",
     "mesh-simplify": "^2.0.0",
     "minimist": "^1.2.0",
+    "open": "^6.4.0",
     "opn": "^6.0.0",
     "paper": "^0.12.3",
     "paper-jsdom": "^0.12.3",
