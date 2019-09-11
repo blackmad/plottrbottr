@@ -1,6 +1,12 @@
 # Overview
 A tool for taking in an SVG and making it more interesting to plot or cut with the magic of voronois and delaunay triangulation.
 
+Takes the longest path found in an SVG and fills it with parametric joy.
+
+I guess somewhat inspried by trammel's [lace maker](https://bitbucket.org/hudson/boxer/src/tip/lace-maker?at=default)
+
+And very inspired by Julien Leonard's [paper cut butterflies](https://julienleonard.com/making-of-paper-cut-butterfly.html)
+
 # Usage
 Requires a pretty recent version of node, I use 
      
