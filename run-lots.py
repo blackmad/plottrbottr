@@ -44,7 +44,7 @@ numIterations = 1
 for file in sys.argv[1:]:
   for i in range(numIterations):
     def processFileCallback(argArray):
-      cmd = ['node', 'voronoi4.js', file, '--holeSize', '0.04', '--butt', 'no'] + argArray + [
+      cmd = ['node', 'lace-maker2.js', file, '--holeSize', '0.04', '--butt', 'no'] + argArray + [
      '--outputTemplate', '%s/{{basePath}}-%s-%s.svg' % (outputDir, '_'.join(argArray), i)]
       runWithTimeout(cmd)
     # print(i)
