@@ -114,10 +114,7 @@ export class LaceMaker {
       )}`
     );
     svgItem.remove();
-    
-    svgItem.style.fill = 'none';
-    actualPath.style.fill = 'none';
-
+   
     // console.log(svgItem.bounds.width, svgItem.bounds.height);
     return actualPath;
   }
@@ -305,7 +302,6 @@ export class LaceMaker {
       size: this.threadHoleSize,
       buffer: this.threadHoleBuffer
     });
-    debugger;
   }
 
   exportSVGString() {

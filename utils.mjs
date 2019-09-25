@@ -9,19 +9,14 @@ import Shape from '@doodle3d/clipper-js';
 import jsEnv from 'browser-or-node';
 
 export let paper = null;
-var JSDOM = null;
+import * as jsdom from 'jsdom';
 
 export async function waitForPaper() {
-  console.error('waiitng for paper in utils')
-
   if (paper) {
-    console.error('have paper, exiting early')
     return paper;
   }
 
   if (!jsEnv.isBrowser) {
-    const jsdom = await import("jsdom");
-    JSDOM = jsdom.default.JSDOM;
     paper = await import('paper-jsdom');
   } else {
     paper = await import('paper');
@@ -175,12 +170,9 @@ export function generatePointsInPath({path, exclude, numExtraPoints}) {
 export function fixSVG(svgString) {
   let document = null;
   
-  if (jsEnv.isNode) {
-    const dom = new JSDOM(svgString);
-    document = dom.window.document;
-  } else {
-    document = window.document;
-  }
+  const JSDOM = jsdom.default.JSDOM;
+  const dom = new JSDOM(svgString);
+  document = dom.window.document;
 
   const paths = document.querySelectorAll('path[d=""]');
   console.log(`have ${paths.length} empty Ds to remove`)
