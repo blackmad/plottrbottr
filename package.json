@@ -6,6 +6,7 @@
   "dependencies": {
     "@doodle3d/clipper-js": "^1.0.10",
     "argparse": "^1.0.10",
+    "browser-or-node": "^1.2.1",
     "bunny": "^1.0.1",
     "clipper-lib": "^6.2.1",
     "commander": "^3.0.1",

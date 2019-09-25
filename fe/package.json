@@ -1,0 +1,31 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "@doodle3d/clipper-js": "^1.0.10",
+    "@types/paper": "^0.11.14",
+    "browser-or-node": "^1.2.1",
+    "core-js": "^2.6.5",
+    "d3-delaunay": "^5.1.5",
+    "lodash": "^4.17.15",
+    "paper": "^0.12.3",
+    "v-file-upload": "^3.1.7",
+    "vue": "^2.6.10",
+    "vue-class-component": "^7.0.2",
+    "vue-property-decorator": "^8.1.0",
+    "vue-upload-component": "^2.8.20"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "^3.11.0",
+    "@vue/cli-plugin-typescript": "^3.11.0",
+    "@vue/cli-service": "^3.11.0",
+    "typescript": "^3.4.3",
+    "vue-template-compiler": "^2.6.10"
+  }
+}

@@ -1,13 +1,20 @@
 const _ = require('lodash');
 
-const args = require('minimist')(process.argv.slice(2));
-const debug = args.debug;
-var paper = require('paper-jsdom');
+const debug = false;
+const realCut = false;
 var Shape = require('@doodle3d/clipper-js');
-var fs = require('fs');
 
-const jsdom = require("jsdom");
-const { JSDOM } = jsdom;
+var jsEnv = require('browser-or-node');
+
+let paper = null;
+var JSDOM = null
+if (jsEnv.isNode) {
+  paper = require('paper-jsdom');
+  const jsdom = require("jsdom");
+  JSDOM = jsdom.JSDOM;
+} else {
+  paper = require('paper');
+}
 
 
 module.exports.show = function(path, color) {
@@ -32,7 +39,7 @@ module.exports.showPathCut = function(path, color) {
   paper.project.activeLayer.addChild(path);
 
   path.style = {
-    strokeWidth: args.realCut ? '0.001pt' : '1px',
+    strokeWidth: realCut ? '0.001pt' : '1px',
     strokeColor: color || 'red',
     fill: 'none'
   };
@@ -149,8 +156,13 @@ module.exports.generatePointsInPath = function({path, exclude, numExtraPoints}) 
 };
 
 module.exports.fixSVG = function(svgString) {
-  const dom = new JSDOM(svgString);
-  const document = dom.window.document;
+  let document = null;
+  if (jsEnv.isNode) {
+    const dom = new JSDOM(svgString);
+    document = dom.window.document;
+  } else {
+    document = window.document;
+  }
 
   const paths = document.querySelectorAll('path[d=""]');
   console.log(`have ${paths.length} empty Ds to remove`)
@@ -158,11 +170,6 @@ module.exports.fixSVG = function(svgString) {
   
   const svgEl = document.querySelector("svg");
   return svgEl.outerHTML;
-}
-
-module.exports.writeSVG = function(outputFilename) {
-	const svgString = paper.project.exportSVG({ asString: true, bounds: 'content' });
-  fs.writeFileSync(outputFilename, module.exports.fixSVG(svgString));
 }
 
 module.exports.roundCorners = function(path, radius) {
