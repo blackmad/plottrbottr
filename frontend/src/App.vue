@@ -3,7 +3,7 @@
     <v-app-bar app>
       <v-toolbar-title class="headline text-uppercase">
         <span>Plottrbottr</span>
-        <span class="font-weight-light">Lace Maker 2</span>
+        <span class="font-weight-light subtitle">Lace Maker 2</span>
       </v-toolbar-title>
       <v-spacer></v-spacer>
       <v-btn
@@ -36,3 +36,9 @@ export default Vue.extend({
   }),
 });
 </script>
+
+<style scoped>
+.subtitle {
+  margin-left: 5px;
+}
+</style>

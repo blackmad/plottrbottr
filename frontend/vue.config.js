@@ -1,3 +1,6 @@
+const path = require("path");
+
 module.exports = {
-    baseUrl: './'
+    baseUrl: './',
+    outputDir: path.resolve(__dirname, "../docs"),
 }

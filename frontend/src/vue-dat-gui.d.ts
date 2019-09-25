@@ -1,1 +1,1 @@
-declare module '@cyrilf/vue-dat-gui
+declare module '@cyrilf/vue-dat-gui';
