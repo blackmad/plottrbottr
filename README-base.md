@@ -7,6 +7,8 @@ I guess somewhat inspried by trammel's [lace maker](https://bitbucket.org/hudson
 
 And very inspired by Julien Leonard's [paper cut butterflies](https://julienleonard.com/making-of-paper-cut-butterfly.html)
 
+Interactive Web Version (https://blackmad.github.io/plottrbottr/)
+
 # Usage
 Requires a pretty recent version of node, I use
 

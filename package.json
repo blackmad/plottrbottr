@@ -25,6 +25,7 @@
     "opn": "^6.0.0",
     "paper": "^0.12.3",
     "paper-jsdom": "^0.12.3",
+    "seedrandom": "^3.0.5",
     "shuffle-array": "^1.0.1",
     "svg-to-geojson": "^1.0.0",
     "svg-to-wkt": "git+https://github.com/davidmcclure/svg-to-wkt.git",

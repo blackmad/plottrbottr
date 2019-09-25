@@ -11,8 +11,8 @@
         <dat-boolean v-model="args.voronoi" label="Voronoi" />
         <dat-boolean v-model="args.rounded" label="Rounded shapes" />
 
-        <dat-number v-model="args.outlineSize" label="Outline Size" />
-        <dat-number v-model="args.safeBorder" label="Safe Border" />
+        <dat-number v-model="args.outlineSize" label="Outline Size (in)" />
+        <dat-number v-model="args.safeBorder" label="Safe Border (in)" />
 
         <dat-boolean v-model="args.subtract" label="Subtract Mode" />
         <dat-number v-model="args.subtractBuffer" label="Subtract Buffer" v-if="args.subtract" />
@@ -25,13 +25,15 @@
           <dat-number v-model="args.maxHeight" label="Max Height (in)" />
         </dat-folder>
 
+        <dat-number v-model="args.randomSeed" label="Seed" />
+
         <!-- <dat-button @click="rerender" label="Rerender" /> -->
       </dat-gui>
     </div>
     <v-row>
       <v-col cols="1"></v-col>
       <v-col sm="11" md="7">
-        <v-row class="pa-md-4">
+        <v-row class="pb-4">
           <file-upload
             ref="upload"
             v-model="files"
@@ -49,8 +51,9 @@
         </v-row>
         <v-row>
           <canvas id="myCanvas" resize></canvas>
+          <div style="width:245px">&nbsp;</div>
         </v-row>
-        <v-row class="pa-md-6">
+        <v-row class="pt-6">
           <v-btn @click.prevent="downloadSVG" v-if="laceMaker">Download Lace-y SVG</v-btn>
         </v-row>
       </v-col>
@@ -97,7 +100,8 @@ export default class HelloWorld extends Vue {
 
     subtractBuffer: 0.2,
     outlineSize: 0.03,
-    safeBorder: 0.1
+    safeBorder: 0.1,
+    randomSeed: new Date().getTime()
   };
 
   // numExtraPoints: number = 10;
@@ -127,7 +131,13 @@ export default class HelloWorld extends Vue {
     // @ts-ignore
     paper.setup(canvas);
 
+    // @ts-ignore
+    Math.seedrandom(this.args.randomSeed);
+
     this.loadButterfly();
+
+    this.loadHash();
+    this.updateHash();
   }
   async loadButterfly() {
     fetch(butterflyPath).then(async res => {
@@ -153,7 +163,19 @@ export default class HelloWorld extends Vue {
     reader.readAsDataURL(data[0].file);
   }
 
+  updateHash() {
+     window.location.hash = JSON.stringify(this.args);
+  }
+
+  loadHash() {
+    if (window.location.hash.length > 1) {
+      this.args = JSON.parse(decodeURI(
+        window.location.hash.substring(1)))
+    }
+  }
+
   rerender() {
+    this.updateHash();
     this.processSVGData(this.lastSVGData);
   }
 
@@ -199,7 +221,7 @@ export default class HelloWorld extends Vue {
     var dataUri = uriPrefix + encoded;
     var downloadLink = document.createElement("a");
     downloadLink.href = dataUri;
-    const filename = this.filePrefix + new Date().getTime() + ".svg";
+    const filename = this.filePrefix + this.args.randomSeed + ".svg";
     downloadLink.download = filename;
     document.body.appendChild(downloadLink);
     downloadLink.click();
@@ -212,7 +234,7 @@ export default class HelloWorld extends Vue {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 canvas {
-  width: 70vw;
+  max-width: calc(100% - 245px);
   max-height: 70vh;
 }
 
