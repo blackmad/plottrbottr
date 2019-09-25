@@ -22,10 +22,11 @@ do_cmd () {
   CMD="node lace-maker2.js $INPUT --outputTemplate '$SVG' $CMD_ARGS"
   echo "## $DESC" >> README.md
   echo "    $CMD"  >> README.md
+  echo $CMD
   echo "important bits:\n"  >> README.md
   echo "    $CMD_ARGS"  >> README.md
   eval $CMD
-  
+
   convert $SVG $PNG;
   echo "![$ARGS]($PNG)" >> README.md
   #

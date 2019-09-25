@@ -69,9 +69,8 @@ Command line options mostly make sense
       --safeBorder SAFEBORDER
                             (in inches) width of border around the inner design
       --rounded             rounds corners of triangles/voronois
-
-# Examples
-    ## Triangles with 0 extra points
+    
+ # Examples## Triangles with 0 extra points
     node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/triangles-0.svg' --numExtraPoints 0
 important bits:
 
