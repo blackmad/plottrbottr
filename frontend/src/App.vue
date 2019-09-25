@@ -1,27 +1,38 @@
 <template>
-  <div id="app">
-    <HelloWorld/>
-  </div>
+  <v-app>
+    <v-app-bar app>
+      <v-toolbar-title class="headline text-uppercase">
+        <span>Plottrbottr</span>
+        <span class="font-weight-light">Lace Maker 2</span>
+      </v-toolbar-title>
+      <v-spacer></v-spacer>
+      <v-btn
+        text
+        href="https://github.com/vuetifyjs/vuetify/releases/latest"
+        target="_blank"
+      >
+        <!-- <span class="mr-2">Latest Release</span> -->
+      </v-btn>
+    </v-app-bar>
+
+    <v-content>
+      <HelloWorld/>
+    </v-content>
+  </v-app>
 </template>
 
-<script>
-import HelloWorld from './components/HelloWorld.vue'
+<script lang="ts">
+import Vue from 'vue';
 
-export default {
-  name: 'app',
+import HelloWorld from './components/HelloWorld.vue';
+
+export default Vue.extend({
+  name: 'App',
   components: {
-    HelloWorld
-  }
-}
+    HelloWorld,
+  },
+  data: () => ({
+    //
+  }),
+});
 </script>
-
-<style>
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>
