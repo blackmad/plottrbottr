@@ -1,12 +1,16 @@
-var fs = require('fs');
-var LaceMaker = require('./lace-maker2-lib.js').LaceMaker;
-var pathModule = require('path');
+import * as fs from 'fs';
+import {LaceMaker, waitForPaper} from './lace-maker2-lib.mjs';
+import * as pathModule from 'path';
+import {writeSVG} from './utils-node.mjs';
 
-const {writeSVG} = require('./utils-node.js');
+import interpolate from 'interpolate-string';
+import opn from 'open';
 
+import argparse from 'argparse';
 
-var ArgumentParser = require('argparse').ArgumentParser;
-var parser = new ArgumentParser({
+let paper = null;
+
+var parser = new argparse.ArgumentParser({
   addHelp: true
 });
 parser.addArgument(['inputFile'], {
@@ -111,13 +115,12 @@ function processFile({ filename, args }) {
 
   console.log('all done, writing out');
 
-  const interpolate = require('interpolate-string');
+  
   const outputFilename = interpolate(args.outputTemplate, {
     basePath: pathModule.basename(filename).split('.')[0]
   });
-  writeSVG(outputFilename);
+  writeSVG({outputFilename, paper});
 
-  var opn = require('open');
   if (args.open) {
     const fullPath = 'file://' + process.cwd() + '/' + outputFilename;
     console.log(fullPath);
@@ -125,7 +128,9 @@ function processFile({ filename, args }) {
   }
 }
 
-function runFromConsole() {
+async function runFromConsole() {
+  paper = await waitForPaper();
+
   var args = parser.parseArgs();
   console.dir(args);
 

@@ -27,7 +27,8 @@
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator";
 import VueUploadComponent from "vue-upload-component";
-import {LaceMaker} from '../lace-maker2-lib.js';
+import {LaceMaker} from '../../../lace-maker2-lib.js';
+import 'paper';
 Vue.component("file-upload", VueUploadComponent);
 
 @Component

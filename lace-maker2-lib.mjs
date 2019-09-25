@@ -1,14 +1,16 @@
-var jsEnv = require('browser-or-node');
+import * as jsEnv from 'browser-or-node';
 
-if (jsEnv.isNode) {
-  var paper = require('paper-jsdom');
-} else {
-  var paper = require('paper');
-}
-const Delaunay = require('d3-delaunay').Delaunay;
-const _ = require('lodash');
+// let paper = null;
+// if (jsEnv.isNode) {
+//   paper = import('paper-jsdom');
+// } else {
+//   paper = import('paper');
+// }
+import d3Delaunay from 'd3-delaunay';
+const Delaunay = d3Delaunay.Delaunay;
+import _ from 'lodash';
+import * as utils from './utils.mjs';
 
-const utils = require('./utils.js');
 const {
   showCut,
   show,
@@ -19,7 +21,14 @@ const {
   roundCorners
 } = utils;
 
-class LaceMaker {
+let paper = null;
+
+export async function waitForPaper() {
+  paper = await utils.waitForPaper();
+  return paper;
+}
+
+export class LaceMaker {
   constructor({
     debug,
     holeSize,
@@ -292,5 +301,3 @@ class LaceMaker {
     });
   }
 }
-
-module.exports = { LaceMaker };

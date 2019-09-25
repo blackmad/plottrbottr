@@ -1,23 +1,31 @@
-const _ = require('lodash');
+'use strict';
+
+import _ from 'lodash';
 
 const debug = false;
 const realCut = false;
-var Shape = require('@doodle3d/clipper-js');
+import Shape from '@doodle3d/clipper-js';
 
-var jsEnv = require('browser-or-node');
+import jsEnv from 'browser-or-node';
 
-let paper = null;
-var JSDOM = null
-if (jsEnv.isNode) {
-  paper = require('paper-jsdom');
-  const jsdom = require("jsdom");
-  JSDOM = jsdom.JSDOM;
-} else {
-  paper = require('paper');
+export let paper = null;
+var JSDOM = null;
+
+export async function waitForPaper() {
+  if (!jsEnv.isBrowser) {
+    const jsdom = await import("jsdom");
+    console.log(jsdom);
+    JSDOM = jsdom.default.JSDOM;
+    console.log(JSDOM);
+    paper = await import('paper-jsdom');
+  } else {
+    paper = await import('paper');
+  }
+  paper = paper.default;
+  return paper;
 }
 
-
-module.exports.show = function(path, color) {
+export function show(path, color) {
   if (debug) {
     let paths = [path];
     if (_.isArray(path)) {
@@ -35,7 +43,7 @@ module.exports.show = function(path, color) {
   }
 };
 
-module.exports.showPathCut = function(path, color) {
+export function showPathCut(path, color) {
   paper.project.activeLayer.addChild(path);
 
   path.style = {
@@ -45,15 +53,15 @@ module.exports.showPathCut = function(path, color) {
   };
 };
 
-module.exports.showCut = function(path, color) {
+export function showCut(path, color) {
   if (_.isArray(path)) {
-    path.forEach(p => module.exports.showPathCut(p, color));
+    path.forEach(p => showPathCut(p, color));
   } else {
-    module.exports.showPathCut(path);
+    showPathCut(path);
   }
-};
+}
 
-module.exports.approxShape = function(
+export function approxShape(
   shape,
   numPointsToGet = 200
 ) {
@@ -75,7 +83,7 @@ module.exports.approxShape = function(
 	return points.map(point => shapeToUse.localToGlobal(point));
 };
 
-module.exports.bufferPoints = function(buffer, points) {
+export function bufferPoints(buffer, points) {
   const scaleFactor = 1000;
   const roundingBit = (1 / scaleFactor) * 10;
   const scaledPoints = points.map(p => {
@@ -110,35 +118,35 @@ module.exports.bufferPoints = function(buffer, points) {
   );
 
   return roundedPolygons;
-};
+}
 
-module.exports.bufferPath = function({buffer, path, numPoints}) {
+export function bufferPath({buffer, path, numPoints}) {
 	// console.log('path', path);
-  const points = module.exports.approxShape(path, numPoints);
+  const points = approxShape(path, numPoints);
   // console.log(points);
-  return module.exports.bufferPoints(buffer, points);
-};
+  return bufferPoints(buffer, points);
+}
 
-module.exports.isArgTrue = function(arg) {
+export function isArgTrue(arg) {
   return arg != null && arg != undefined && arg != 'no' && arg != 'false';
-};
+}
 
-module.exports.isArgFalse = function(arg) {
-	return !module.exports.isArgTrue(arg);
-};
+export function isArgFalse(arg) {
+	return !isArgTrue(arg);
+}
 
-module.exports.fixPoint = function({ point, shape }) {
+export function fixPoint({ point, shape }) {
   return new paper.Point(
     point.x + shape.bounds.x,
     point.y + shape.bounds.y / 2
   );
-};
+}
 
-module.exports.getRelativePoint = function({ shape, pos }) {
-  return module.exports.fixPoint({ shape, point: shape.getPointAt(pos) });
-};
+export function getRelativePoint({ shape, pos }) {
+  return fixPoint({ shape, point: shape.getPointAt(pos) });
+}
 
-module.exports.generatePointsInPath = function({path, exclude, numExtraPoints}) {
+export function generatePointsInPath({path, exclude, numExtraPoints}) {
   console.log('making extra points', numExtraPoints);
   const extraPoints = [];
   while (extraPoints.length < numExtraPoints * 2) {
@@ -148,15 +156,19 @@ module.exports.generatePointsInPath = function({path, exclude, numExtraPoints}) 
     );
     if (path.contains(testPoint) && (!exclude || !exclude.contains(testPoint))) {
 			extraPoints.push([testPoint.x, testPoint.y]);
-			module.exports.show(new paper.Path.Circle(testPoint, 0.02), 'lightblue')
+			show(new paper.Path.Circle(testPoint, 0.02), 'lightblue')
     }
   }
   console.log('done with extra points');
   return extraPoints;
 };
 
-module.exports.fixSVG = function(svgString) {
+export function fixSVG(svgString) {
   let document = null;
+  console.log('jsEnv');
+  console.log(jsEnv)
+  console.log(jsEnv.isNode);
+  
   if (jsEnv.isNode) {
     const dom = new JSDOM(svgString);
     document = dom.window.document;
@@ -172,7 +184,7 @@ module.exports.fixSVG = function(svgString) {
   return svgEl.outerHTML;
 }
 
-module.exports.roundCorners = function(path, radius) {
+export function roundCorners(path, radius) {
   var segments = path.segments.slice(0);
   path.removeSegments();
 
