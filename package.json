@@ -4,6 +4,7 @@
   "description": "",
   "main": "circle-packing.js",
   "dependencies": {
+    "@cyrilf/vue-dat-gui": "^0.3.0",
     "@doodle3d/clipper-js": "^1.0.10",
     "argparse": "^1.0.10",
     "browser-or-node": "^1.2.1",

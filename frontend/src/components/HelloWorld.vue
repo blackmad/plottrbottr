@@ -1,38 +1,72 @@
 <template>
   <v-container>
-    <v-col cols="6">
-      <v-row>
-        <file-upload
-          ref="upload"
-          v-model="files"
-          extensions="svg"
-          accept="image/svg+xml"
-          :multiple="false"
-          @input="fileUploaded"
-        >
-          <v-btn
-            v-if="!$refs.upload || !$refs.upload.active"
-            @click.prevent="$refs.upload.active = true"
-          >Upload SVG</v-btn>
-        </file-upload>
+    <div class="dat" id="dat">
+      <dat-gui
+        v-if="laceMaker"
+        closeText="Close controls"
+        openText="Open controls"
+        closePosition="bottom"
+      >
+        <!-- <dat-color v-model="background" label="Background"/> -->
+        <dat-boolean v-model="args.voronoi" label="Voronoi" />
+        <dat-boolean v-model="args.rounded" label="Rounded shapes" />
 
-        <v-btn @click.prevent="loadButterfly">Load a butterfly! (demo)</v-btn>
-      </v-row>
-      <v-row>
-        <canvas id="myCanvas"></canvas>
-      </v-row>
-      <v-row>
-        <v-btn @click.prevent="downloadSVG" v-if="laceMaker">Download SVG</v-btn>
-      </v-row>
-    </v-col>
+        <dat-number v-model="args.outlineSize" label="Outline Size" />
+        <dat-number v-model="args.safeBorder" label="Safe Border" />
+
+        <dat-boolean v-model="args.subtract" label="Subtract Mode" />
+        <dat-number v-model="args.subtractBuffer" label="Subtract Buffer" v-if="args.subtract" />
+
+        <dat-number v-model="args.numPoints" label="Outline Approx Points" />
+        <dat-number v-model="args.numExtraPoints" label="Extra Points" />
+
+        <dat-folder label="Sizing">
+          <dat-number v-model="args.maxWidth" label="Max Width (in)" />
+          <dat-number v-model="args.maxHeight" label="Max Height (in)" />
+        </dat-folder>
+
+        <!-- <dat-button @click="rerender" label="Rerender" /> -->
+      </dat-gui>
+    </div>
+    <v-row>
+      <v-col cols="1"></v-col>
+      <v-col sm="11" md="7">
+        <v-row class="pa-md-4">
+          <file-upload
+            ref="upload"
+            v-model="files"
+            extensions="svg"
+            accept="image/svg+xml"
+            :multiple="false"
+            @input="fileUploaded"
+          >
+            <v-btn
+              v-if="!$refs.upload || !$refs.upload.active"
+              @click.prevent="$refs.upload.active = true"
+            >Upload SVG</v-btn>
+          </file-upload>
+          <!-- <v-btn @click.prevent="loadButterfly">Load a butterfly! (demo)</v-btn> -->
+        </v-row>
+        <v-row>
+          <canvas id="myCanvas" resize></canvas>
+        </v-row>
+        <v-row class="pa-md-6">
+          <v-btn @click.prevent="downloadSVG" v-if="laceMaker">Download Lace-y SVG</v-btn>
+        </v-row>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from "vue-property-decorator";
+import { Component, Prop, Vue, Watch } from "vue-property-decorator";
 
 import VueUploadComponent from "vue-upload-component";
 Vue.component("file-upload", VueUploadComponent);
+
+import DatGui from "@cyrilf/vue-dat-gui";
+
+Vue.use(DatGui);
 
 import "paper";
 
@@ -48,6 +82,42 @@ export default class HelloWorld extends Vue {
   files: string[] = [];
   laceMaker = null;
   filePrefix = "";
+
+  lastSVGData = "";
+
+  args = {
+    numExtraPoints: 10,
+    numPoints: 50,
+    maxWidth: 3,
+    maxHeight: 3,
+
+    voronoi: true,
+    subtract: false,
+    rounded: false,
+
+    subtractBuffer: 0.2,
+    outlineSize: 0.03,
+    safeBorder: 0.1
+  };
+
+  // numExtraPoints: number = 10;
+  // numPoints: number = 50;
+  // maxWidth: number = 3;
+  // maxHeight: number = 3;
+
+  // voronoi: boolean = true;
+  // subtract: boolean = false;
+  // rounded: boolean = false;
+
+  // subtractBuffer = 0.2;
+  // outlineSize = 0.03;
+  // safeBorder = 0.1;
+
+  @Watch("args", { deep: true })
+  watcher() {
+    this.rerender();
+  }
+
   mounted() {
     // Get a reference to the canvas object
     var canvas: HTMLCanvasElement = document.getElementById(
@@ -56,6 +126,8 @@ export default class HelloWorld extends Vue {
     // // Create an empty project and a view for the canvas:
     // @ts-ignore
     paper.setup(canvas);
+
+    this.loadButterfly();
   }
   async loadButterfly() {
     fetch(butterflyPath).then(async res => {
@@ -80,20 +152,27 @@ export default class HelloWorld extends Vue {
     this.filePrefix = data[0].file.name.split(".")[0];
     reader.readAsDataURL(data[0].file);
   }
+
+  rerender() {
+    this.processSVGData(this.lastSVGData);
+  }
+
   async processSVGData(svgData: string) {
+    this.lastSVGData = svgData;
+
     this.laceMaker = new LaceMaker({
       debug: false,
       inchInPoints: 72,
-      maxWidth: 3,
-      maxHeight: 3,
-      voronoi: true,
-      subtract: false,
-      numPoints: 50,
-      numExtraPoints: 10,
-      subtractBuffer: 0.2,
-      outlineSize: 0.03,
-      safeBorder: 0.1,
-      rounded: false,
+      maxWidth: this.args.maxWidth,
+      maxHeight: this.args.maxHeight,
+      voronoi: this.args.voronoi,
+      subtract: this.args.subtract,
+      numPoints: this.args.numPoints,
+      numExtraPoints: this.args.numExtraPoints,
+      subtractBuffer: this.args.subtractBuffer,
+      outlineSize: this.args.outlineSize,
+      safeBorder: this.args.safeBorder,
+      rounded: this.args.rounded,
       holeSize: 0,
       addHole: false,
       butt: false
@@ -139,5 +218,10 @@ canvas {
 
 .file-uploads {
   overflow: visible !important;
+}
+
+.vue-dat-gui {
+  z-index: 100000;
+  margin-top: 75px;
 }
 </style>
