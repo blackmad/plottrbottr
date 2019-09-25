@@ -1,14 +1,12 @@
 import * as fs from 'fs';
-import {LaceMaker, waitForPaper} from './lace-maker2-lib.mjs';
+import {LaceMaker} from './lace-maker2-lib.mjs';
 import * as pathModule from 'path';
-import {writeSVG} from './utils-node.mjs';
+import {fixSVG} from './utils.mjs';
 
 import interpolate from 'interpolate-string';
 import opn from 'open';
 
 import argparse from 'argparse';
-
-let paper = null;
 
 var parser = new argparse.ArgumentParser({
   addHelp: true
@@ -103,23 +101,22 @@ parser.addArgument('--rounded', {
   action: 'storeTrue'
 });
 
-function processFile({ filename, args }) {
+async function processFile({ filename, args }) {
   console.log(`processing ${filename}`);
   const svgData = fs.readFileSync(filename, 'utf8');
 
-  // INIT AND USE LACE MAKER HERE
   const laceMaker = new LaceMaker(args);
-  laceMaker.loadAndProcessSvgData({ svgData });
+  await laceMaker.loadAndProcessSvgData({ svgData });
+  const newSvgString = laceMaker.exportSVGString();
 
   // show(actualPath, 'black');
 
   console.log('all done, writing out');
 
-  
   const outputFilename = interpolate(args.outputTemplate, {
     basePath: pathModule.basename(filename).split('.')[0]
   });
-  writeSVG({outputFilename, paper});
+  fs.writeFileSync(outputFilename, fixSVG(newSvgString));
 
   if (args.open) {
     const fullPath = 'file://' + process.cwd() + '/' + outputFilename;
@@ -129,12 +126,13 @@ function processFile({ filename, args }) {
 }
 
 async function runFromConsole() {
-  paper = await waitForPaper();
-
   var args = parser.parseArgs();
   console.dir(args);
 
-  args.inputFile.forEach(filename => processFile({ filename, args }));
+  args.inputFile.forEach(async (filename) => {
+    await processFile({ filename, args })
+  }
+ );
 }
 
 runFromConsole();

@@ -1,15 +1,8 @@
-import * as jsEnv from 'browser-or-node';
-
-// let paper = null;
-// if (jsEnv.isNode) {
-//   paper = import('paper-jsdom');
-// } else {
-//   paper = import('paper');
-// }
 import d3Delaunay from 'd3-delaunay';
 const Delaunay = d3Delaunay.Delaunay;
 import _ from 'lodash';
 import * as utils from './utils.mjs';
+import { setPaper } from './utils.mjs';
 
 const {
   showCut,
@@ -23,9 +16,9 @@ const {
 
 let paper = null;
 
-export async function waitForPaper() {
+async function waitForPaper() {
+  console.error('waiitng for paper in lace maker')
   paper = await utils.waitForPaper();
-  return paper;
 }
 
 export class LaceMaker {
@@ -80,6 +73,7 @@ export class LaceMaker {
 
   loadAndResizeSvg({ svgData, yOffset = 0, xOffset = 0 }) {
     var svgItem = paper.project.importSVG(svgData); //, {insert: false})
+    
     // show(svgItem, 'black');
     const path = svgItem.children[1];
     console.log('num children', svgItem.children.length);
@@ -120,6 +114,9 @@ export class LaceMaker {
       )}`
     );
     svgItem.remove();
+    
+    svgItem.style.fill = 'none';
+    actualPath.style.fill = 'none';
 
     // console.log(svgItem.bounds.width, svgItem.bounds.height);
     return actualPath;
@@ -279,8 +276,17 @@ export class LaceMaker {
     return ret;
   }
 
-  loadAndProcessSvgData({ svgData }) {
-    paper.setup([10, 10]);
+  async loadAndProcessSvgData({ svgData, paperModule }) {
+    if (paperModule) {
+      paper = paperModule;
+      utils.setPaper(paper);
+    }
+
+    if (!paper) {
+      await waitForPaper();
+      paper.setup([10, 10]);
+    }
+
     paper.settings.insertItems = false;
     let actualPath = this.loadAndResizeSvg({
       svgData,
@@ -298,6 +304,14 @@ export class LaceMaker {
       path: actualPath,
       size: this.threadHoleSize,
       buffer: this.threadHoleBuffer
+    });
+    debugger;
+  }
+
+  exportSVGString() {
+    return paper.project.exportSVG({
+      asString: true,
+      bounds: 'content'
     });
   }
 }

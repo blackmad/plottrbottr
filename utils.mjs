@@ -12,17 +12,26 @@ export let paper = null;
 var JSDOM = null;
 
 export async function waitForPaper() {
+  console.error('waiitng for paper in utils')
+
+  if (paper) {
+    console.error('have paper, exiting early')
+    return paper;
+  }
+
   if (!jsEnv.isBrowser) {
     const jsdom = await import("jsdom");
-    console.log(jsdom);
     JSDOM = jsdom.default.JSDOM;
-    console.log(JSDOM);
     paper = await import('paper-jsdom');
   } else {
     paper = await import('paper');
   }
   paper = paper.default;
   return paper;
+}
+
+export function setPaper(paperModule) {
+  paper = paperModule;
 }
 
 export function show(path, color) {
@@ -165,9 +174,6 @@ export function generatePointsInPath({path, exclude, numExtraPoints}) {
 
 export function fixSVG(svgString) {
   let document = null;
-  console.log('jsEnv');
-  console.log(jsEnv)
-  console.log(jsEnv.isNode);
   
   if (jsEnv.isNode) {
     const dom = new JSDOM(svgString);

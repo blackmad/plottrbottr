@@ -19,7 +19,7 @@ do_cmd () {
   SVG="examples/output-svg/$OUTPUT.svg"
   PNG="examples/output-png/$OUTPUT.png"
 
-  CMD="node lace-maker2.js $INPUT --outputTemplate '$SVG' $CMD_ARGS"
+  CMD="node --experimental-modules lace-maker2.mjs $INPUT --outputTemplate '$SVG' $CMD_ARGS"
   echo "## $DESC" >> README.md
   echo "    $CMD"  >> README.md
   echo $CMD

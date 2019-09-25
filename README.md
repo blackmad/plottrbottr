@@ -71,13 +71,19 @@ Command line options mostly make sense
       --rounded             rounds corners of triangles/voronois
     
  # Examples## Triangles with 0 extra points
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/triangles-0.svg' --numExtraPoints 0
+    node --experimental-modules lace-maker2.mjs examples/input/butterfly.svg --outputTemplate 'examples/output-svg/triangles-0.svg' --numExtraPoints 0
 important bits:
 
     --numExtraPoints 0
 ![](examples/output-png/triangles-0.png)
 ## Triangles with 10 extra points
-    node lace-maker2.js examples/input/butterfly.svg --outputTemplate 'examples/output-svg/triangles-10.svg' --numExtraPoints 10
+    node --experimental-modules lace-maker2.mjs examples/input/butterfly.svg --outputTemplate 'examples/output-svg/triangles-10.svg' --numExtraPoints 10
 important bits:
 
     --numExtraPoints 10
+![](examples/output-png/triangles-10.png)
+## Triangles with 10 extra points + rounding
+    node --experimental-modules lace-maker2.mjs examples/input/butterfly.svg --outputTemplate 'examples/output-svg/triangles-rounded-10.svg' --rounded --numExtraPoints 10
+important bits:
+
+    --rounded --numExtraPoints 10
