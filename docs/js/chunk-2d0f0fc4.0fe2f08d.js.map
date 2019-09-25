@@ -1,0 +1,1 @@
+{"version":3,"sources":["webpack:///../node_modules/paper-jsdom/index.js"],"names":["module","exports"],"mappings":"qGAEAA,EAAOC,QAAU,EAAQ","file":"js/chunk-2d0f0fc4.0fe2f08d.js","sourcesContent":["// Just pass through. The rest is handled by paper.js itself.\n// See `requireName` in paper.js/src/node/self.js\nmodule.exports = require('paper');\n"],"sourceRoot":""}
