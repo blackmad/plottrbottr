@@ -293,8 +293,9 @@ export class LaceMaker {
 
     if (!actualPath.closed) {
       console.log('not closed outer ring');
-      process.exit(1);
-    }
+      actualPath.closePath();
+      //process.exit(1);
+    } 
 
     this.buildTriangles({ path: actualPath }); //, points: allPoints });
     this.doAddHole({
