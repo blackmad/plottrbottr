@@ -29,12 +29,16 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from "vue-property-decorator";
+
 import VueUploadComponent from "vue-upload-component";
+Vue.component("file-upload", VueUploadComponent);
+
+
+import 'paper';
+
 import { LaceMaker } from "../../../lace-maker2-lib.mjs";
 import { fixSVG } from "../../../utils.mjs";
 import * as butterflyPath from "../../../examples/input/butterfly.svg";
-import "paper";
-Vue.component("file-upload", VueUploadComponent);
 
 @Component
 export default class HelloWorld extends Vue {
@@ -55,6 +59,7 @@ export default class HelloWorld extends Vue {
     fetch(butterflyPath).then(async res => {
       const blob = await res.blob();
       this.filePrefix = 'butterfly';
+      // @ts-ignore
       const text = await blob.text();
       this.processSVGData(text);
     });
@@ -65,6 +70,7 @@ export default class HelloWorld extends Vue {
     const self = this;
     reader.onload = async function(svgDataReader) {
       const svgData = atob(
+        // @ts-ignore
         (svgDataReader.target.result as string).substring(26)
       );
       // document.getElementById("origSVG").innerHTML = svgData;
@@ -75,7 +81,7 @@ export default class HelloWorld extends Vue {
     reader.readAsDataURL(data[0].file);
   }
 
-  async processSVGData(svgData) {
+  async processSVGData(svgData: string) {
     this.laceMaker = new LaceMaker({
       debug: false,
       inchInPoints: 72,
@@ -94,6 +100,7 @@ export default class HelloWorld extends Vue {
       addHole: false,
       butt: false
     });
+    
     paper.project.clear();
 
     console.error(paper);
@@ -104,8 +111,6 @@ export default class HelloWorld extends Vue {
     paper.project.activeLayer.style.fillColor = null;
     paper.project.activeLayer.style.strokeWidth = 0.5;
     paper.project.activeLayer.fitBounds(paper.view.bounds);
-
-    paper.view.draw();
   }
 
   downloadSVG() {
