@@ -14523,7 +14523,7 @@ new function() {
 			bounds = definitionItem.getStrokeBounds();
 		if (!node) {
 			node = SvgElement.create('symbol', {
-				viewBox: formatter.rectangle(bounds).replace(',', ' ')
+				viewBox: formatter.rectangle(bounds).replace(/,/g, ' ')
 			});
 			node.appendChild(exportSVG(definitionItem, options));
 			setDefinition(definition, node, 'symbol');
@@ -14742,7 +14742,7 @@ new function() {
 				attrs.width = rect.width;
 				attrs.height = rect.height;
 				if (rect.x || rect.x === 0 || rect.y || rect.y === 0)
-					attrs.viewBox = formatter.rectangle(rect).replace(',', ' ')
+					attrs.viewBox = formatter.rectangle(rect).replace(/,/g, ' ')
 			}
 			var node = SvgElement.create('svg', attrs, formatter),
 				parent = node;
