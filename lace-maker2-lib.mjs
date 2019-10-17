@@ -2,7 +2,6 @@ import d3Delaunay from 'd3-delaunay';
 const Delaunay = d3Delaunay.Delaunay;
 import _ from 'lodash';
 import * as utils from './utils.mjs';
-import { setPaper } from './utils.mjs';
 
 const {
   showCut,
