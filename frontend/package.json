@@ -22,7 +22,7 @@
     "vue-material": "^1.0.0-beta-11",
     "vue-property-decorator": "^8.1.0",
     "vue-upload-component": "^2.8.20",
-    "vuetify": "^2.0.19"
+    "vuetify": "^2.6.10"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^3.11.0",
